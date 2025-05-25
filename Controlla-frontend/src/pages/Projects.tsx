@@ -1,80 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Plus, Search, Filter, Clock, Users, MoreHorizontal, Calendar, ArrowUpRight } from 'lucide-react';
-
-// Mock project data
-const PROJECTS = [
-  {
-    id: '1',
-    name: 'Website Redesign',
-    description: 'Complete overhaul of company website with modern design and improved UX',
-    status: 'in-progress',
-    priority: 'high',
-    dueDate: '2025-06-30',
-    progress: 65,
-    assignedContractors: [
-      {
-        id: '1',
-        name: 'Alex Johnson',
-        avatar: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150',
-      },
-      {
-        id: '2',
-        name: 'Sarah Miller',
-        avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150',
-      },
-    ],
-    totalHours: 245,
-    budget: 15000,
-    spent: 9750,
-  },
-  {
-    id: '2',
-    name: 'Mobile App Development',
-    description: 'Native mobile application for iOS and Android platforms',
-    status: 'planning',
-    priority: 'medium',
-    dueDate: '2025-08-15',
-    progress: 15,
-    assignedContractors: [
-      {
-        id: '3',
-        name: 'David Chen',
-        avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150',
-      },
-    ],
-    totalHours: 80,
-    budget: 25000,
-    spent: 3750,
-  },
-  {
-    id: '3',
-    name: 'E-commerce Integration',
-    description: 'Integration of payment gateway and inventory management system',
-    status: 'completed',
-    priority: 'medium',
-    dueDate: '2025-05-30',
-    progress: 100,
-    assignedContractors: [
-      {
-        id: '4',
-        name: 'Maria Rodriguez',
-        avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150',
-      },
-    ],
-    totalHours: 160,
-    budget: 12000,
-    spent: 12000,
-  },
-];
+import { projectsService, Project, CreateProjectDto } from '../services/projectsService';
+import CreateProjectModal from '../components/projects/CreateProjectModal';
 
 const Projects = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'in-progress' | 'planning' | 'completed'>('all');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProjects = async () => {
+    try {
+      const data = await projectsService.getAll();
+      setProjects(data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load projects');
+      console.error('Error loading projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const handleCreateProject = async (data: CreateProjectDto) => {
+    try {
+      await projectsService.create(data);
+      await fetchProjects(); // Refresh the projects list
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  };
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -114,7 +80,7 @@ const Projects = () => {
     }).format(amount);
   };
   
-  const filteredProjects = PROJECTS.filter((project) => {
+  const filteredProjects = projects.filter((project) => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -122,8 +88,24 @@ const Projects = () => {
     
     return matchesSearch && matchesStatus;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Loading projects...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-error-500">{error}</p>
+      </div>
+    );
+  }
   
-  return ( // Projects page
+  return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
@@ -140,12 +122,12 @@ const Projects = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card> {/* Total Projects Card */}
+        <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Projects</p>
-                <p className="text-2xl font-semibold mt-1">{PROJECTS.length}</p>
+                <p className="text-2xl font-semibold mt-1">{projects.length}</p>
               </div>
               <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
                 <ArrowUpRight size={24} />
@@ -154,13 +136,13 @@ const Projects = () => {
           </CardContent>
         </Card>
         
-        <Card> {/* In Progress Card */}
+        <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">In Progress</p>
                 <p className="text-2xl font-semibold mt-1">
-                  {PROJECTS.filter(p => p.status === 'in-progress').length}
+                  {projects.filter(p => p.status === 'in-progress').length}
                 </p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
@@ -170,13 +152,13 @@ const Projects = () => {
           </CardContent>
         </Card>
         
-        <Card> {/* Total Budget Card */}
+        <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Budget</p>
                 <p className="text-2xl font-semibold mt-1">
-                  {formatCurrency(PROJECTS.reduce((acc, p) => acc + p.budget, 0))}
+                  {formatCurrency(projects.reduce((acc, p) => acc + p.budget, 0))}
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center text-green-600">
@@ -186,13 +168,13 @@ const Projects = () => {
           </CardContent>
         </Card>
         
-        <Card> {/* Total Hours Card */}
+        <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Hours</p>
                 <p className="text-2xl font-semibold mt-1">
-                  {PROJECTS.reduce((acc, p) => acc + p.totalHours, 0)}
+                  {projects.reduce((acc, p) => acc + p.totalHours, 0)}
                 </p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
@@ -203,7 +185,7 @@ const Projects = () => {
         </Card>
       </div>
       
-      <Card> {/* Projects List Card */}
+      <Card>
         <CardHeader className="border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div className="w-full sm:max-w-md">
@@ -340,6 +322,12 @@ const Projects = () => {
           </div>
         </CardContent>
       </Card>
+
+      <CreateProjectModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateProject}
+      />
     </div>
   );
 };
