@@ -8,7 +8,7 @@ import Projects from '../pages/Projects';
 import ProjectDetails from '../pages/ProjectDetails';
 import TimeTracking from '../pages/TimeTracking';
 import Finance from '../pages/Finance';
-import Login from '../pages/Login';
+// import Login from '../pages/Login';
 import NotFound from '../pages/NotFound';
 
 type ProtectedRouteProps = {
@@ -30,7 +30,7 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
+      {/* <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} /> */}
       
       <Route
         path="/"

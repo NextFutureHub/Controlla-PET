@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bell, Menu, X, Search } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, User } from '../../context/AuthContext';
 import Button from '../ui/Button';
 
 interface HeaderProps {

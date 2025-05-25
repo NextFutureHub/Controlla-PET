@@ -1,9 +1,10 @@
 import { createContext, useContext, ReactNode, useState } from 'react';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   name: string;
+  avatar?: string;
 }
 
 interface AuthContextType {
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: '1',
       email,
       name: 'Demo User',
+      avatar: undefined
     });
   };
 

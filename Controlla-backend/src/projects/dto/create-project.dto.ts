@@ -1,5 +1,6 @@
-import { IsString, IsNumber, IsDateString, IsArray, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsDate, IsNumber, IsArray, IsOptional, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { ProjectStatus, ProjectPriority } from '../entities/project.entity';
 
 export class CreateProjectDto {
   @ApiProperty({
@@ -7,6 +8,7 @@ export class CreateProjectDto {
     example: 'Website Redesign'
   })
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @ApiProperty({
@@ -14,6 +16,7 @@ export class CreateProjectDto {
     example: 'Complete overhaul of company website with modern design and improved UX'
   })
   @IsString()
+  @IsNotEmpty()
   description: string;
 
   @ApiProperty({
@@ -21,23 +24,26 @@ export class CreateProjectDto {
     example: 'in-progress',
     enum: ['in-progress', 'planning', 'completed']
   })
-  @IsString()
-  status: string;
+  @IsEnum(ProjectStatus)
+  @IsOptional()
+  status?: ProjectStatus;
 
   @ApiProperty({
     description: 'Приоритет проекта',
     example: 'high',
     enum: ['high', 'medium', 'low']
   })
-  @IsString()
-  priority: string;
+  @IsEnum(ProjectPriority)
+  @IsOptional()
+  priority?: ProjectPriority;
 
   @ApiProperty({
     description: 'Дата завершения проекта',
     example: '2025-07-11'
   })
-  @IsDateString()
-  dueDate: string;
+  @IsDate()
+  @IsNotEmpty()
+  dueDate: Date;
 
   @ApiProperty({
     description: 'Прогресс проекта в процентах',
@@ -48,20 +54,24 @@ export class CreateProjectDto {
   @IsNumber()
   @Min(0)
   @Max(100)
-  progress: number;
+  @IsOptional()
+  progress?: number;
 
   @ApiProperty({
     description: 'Общее количество часов',
     example: 245
   })
   @IsNumber()
-  totalHours: number;
+  @Min(0)
+  @IsOptional()
+  totalHours?: number;
 
   @ApiProperty({
     description: 'Бюджет проекта',
     example: 15000
   })
   @IsNumber()
+  @Min(0)
   budget: number;
 
   @ApiProperty({
@@ -69,13 +79,15 @@ export class CreateProjectDto {
     example: 9750
   })
   @IsNumber()
-  spent: number;
+  @Min(0)
+  @IsOptional()
+  spent?: number;
 
   @ApiProperty({
     description: 'ID назначенных подрядчиков',
-    example: ['1', '2'],
-    type: [String]
+    example: ['1', '2', '3']
   })
   @IsArray()
-  assignedContractors: string[];
+  @IsOptional()
+  assignedContractors?: string[];
 }
