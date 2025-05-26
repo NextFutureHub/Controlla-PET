@@ -1,5 +1,6 @@
 import { apiService } from './apiService';
-import { ContractorStatus } from '../types/contractor';
+import { ContractorStatus, ContractorRole } from '../types/contractor';
+import { Project } from './projectsService';
 
 const API_URL = 'http://localhost:3000';
 
@@ -7,12 +8,13 @@ export interface Contractor {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: ContractorRole;
   hourlyRate: number;
   rating: number;
   status: ContractorStatus;
   location?: string;
   avatar?: string;
+  projects?: Project[];
   createdAt: string;
   updatedAt: string;
 }

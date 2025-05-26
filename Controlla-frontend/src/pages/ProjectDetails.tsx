@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
-import { Plus, Clock, Users, Calendar, AlertCircle, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Plus, Clock, Users, Calendar, AlertCircle, MoreHorizontal, Trash2, X } from 'lucide-react';
 import { projectsService, Project } from '../services/projectsService';
 import { tasksService, Task, CreateTaskDto } from '../services/tasksService';
 import { getProjectStatusInfo } from '../utils/projectStatus';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
+import { contractorsService, Contractor } from '../services/contractorsService';
+import { toast } from 'react-hot-toast';
 
 interface CreateTaskFormData {
   name: string;
@@ -23,9 +26,7 @@ interface CreateTaskFormData {
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [taskFormData, setTaskFormData] = useState<CreateTaskFormData>({
@@ -35,30 +36,124 @@ const ProjectDetails = () => {
     dueDate: '',
     priority: 'medium'
   });
+  const [showAddContractorsModal, setShowAddContractorsModal] = useState(false);
+  const [selectedContractors, setSelectedContractors] = useState<string[]>([]);
 
-  const fetchProject = async () => {
-    try {
-      if (id) {
-        const data = await projectsService.getById(id);
-        setProject(data);
-        setError(null);
+  // Получение данных проекта с использованием React Query
+  const { data: project, isLoading: isLoadingProject } = useQuery({
+    queryKey: ['project', id],
+    queryFn: () => projectsService.getById(id!),
+    enabled: !!id,
+  });
+
+  // Получение списка подрядчиков
+  const { data: contractors = [] } = useQuery({
+    queryKey: ['contractors'],
+    queryFn: () => contractorsService.getAll(),
+  });
+
+  // Мутация для добавления подрядчиков
+  const addContractorsMutation = useMutation({
+    mutationFn: ({ projectId, contractorIds }: { projectId: string; contractorIds: string[] }) =>
+      projectsService.addContractors(projectId, contractorIds),
+    onMutate: async ({ projectId, contractorIds }) => {
+      // Отменяем исходящие запросы
+      await queryClient.cancelQueries({ queryKey: ['project', projectId] });
+
+      // Сохраняем предыдущее состояние
+      const previousProject = queryClient.getQueryData(['project', projectId]);
+
+      // Оптимистично обновляем данные
+      queryClient.setQueryData(['project', projectId], (old: any) => {
+        const newContractors = contractors
+          .filter(c => contractorIds.includes(c.id))
+          .map(c => ({
+            id: c.id,
+            name: c.name,
+            avatar: c.avatar,
+            role: c.role
+          }));
+
+        return {
+          ...old,
+          assignedContractors: [...(old?.assignedContractors || []), ...newContractors]
+        };
+      });
+
+      return { previousProject };
+    },
+    onError: (err, variables, context) => {
+      // В случае ошибки возвращаем предыдущее состояние
+      if (context?.previousProject) {
+        queryClient.setQueryData(['project', id], context.previousProject);
       }
-    } catch (err) {
-      setError('Failed to load project details');
-      console.error('Error loading project:', err);
-    } finally {
-      setLoading(false);
+      toast.error('Failed to add contractors');
+    },
+    onSettled: () => {
+      // В любом случае инвалидируем запрос для получения актуальных данных
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      setShowAddContractorsModal(false);
+      setSelectedContractors([]);
+      toast.success('Contractors added successfully');
+    },
+  });
+
+  // Мутация для удаления подрядчика
+  const removeContractorMutation = useMutation({
+    mutationFn: ({ projectId, contractorId }: { projectId: string; contractorId: string }) =>
+      projectsService.removeContractor(projectId, contractorId),
+    onMutate: async ({ projectId, contractorId }) => {
+      // Отменяем исходящие запросы
+      await queryClient.cancelQueries({ queryKey: ['project', projectId] });
+
+      // Сохраняем предыдущее состояние
+      const previousProject = queryClient.getQueryData(['project', projectId]);
+
+      // Оптимистично обновляем данные
+      queryClient.setQueryData(['project', projectId], (old: any) => ({
+        ...old,
+        assignedContractors: old?.assignedContractors.filter((c: any) => c.id !== contractorId) || []
+      }));
+
+      return { previousProject };
+    },
+    onError: (err, variables, context) => {
+      // В случае ошибки возвращаем предыдущее состояние
+      if (context?.previousProject) {
+        queryClient.setQueryData(['project', id], context.previousProject);
+      }
+      toast.error('Failed to remove contractor');
+    },
+    onSettled: () => {
+      // В любом случае инвалидируем запрос для получения актуальных данных
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      toast.success('Contractor removed successfully');
+    },
+  });
+
+  const handleAddContractors = async () => {
+    if (selectedContractors.length === 0) {
+      toast.error('Please select at least one contractor');
+      return;
     }
+
+    await addContractorsMutation.mutateAsync({
+      projectId: id!,
+      contractorIds: selectedContractors,
+    });
   };
 
-  useEffect(() => {
-    fetchProject();
-  }, [id]);
+  const handleRemoveContractor = async (contractorId: string) => {
+    await removeContractorMutation.mutateAsync({
+      projectId: id!,
+      contractorId,
+    });
+  };
 
   const handleCreateTask = async (data: CreateTaskDto) => {
     try {
       await tasksService.create(data);
-      await fetchProject();
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
       setShowCreateModal(false);
     } catch (error) {
       console.error('Error creating task:', error);
@@ -69,7 +164,7 @@ const ProjectDetails = () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
         await tasksService.delete(id!, taskId);
-        await fetchProject();
+        queryClient.invalidateQueries({ queryKey: ['project', id] });
       } catch (error) {
         console.error('Error deleting task:', error);
       }
@@ -88,7 +183,7 @@ const ProjectDetails = () => {
     }).format(amount);
   };
 
-  if (loading) {
+  if (isLoadingProject) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-500">Loading project details...</p>
@@ -96,10 +191,10 @@ const ProjectDetails = () => {
     );
   }
 
-  if (error || !project) {
+  if (!project) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-error-500">{error || 'Project not found'}</p>
+        <p className="text-error-500">Project not found</p>
       </div>
     );
   }
@@ -264,12 +359,138 @@ const ProjectDetails = () => {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Users size={20} />
+            <span>Assigned Contractors</span>
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddContractorsModal(true)}
+          >
+            <Plus size={16} className="mr-2" />
+            Add Contractors
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {project?.assignedContractors && project.assignedContractors.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {project.assignedContractors.map((contractor) => (
+                <div
+                  key={contractor.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={contractor.avatar || 'https://via.placeholder.com/40'}
+                      alt={contractor.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="font-medium">{contractor.name}</p>
+                      <p className="text-sm text-gray-500">{contractor.role}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveContractor(contractor.id)}
+                    className="text-gray-400 hover:text-red-500"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No contractors assigned to this project</p>
+          )}
+        </CardContent>
+      </Card>
+
       <CreateTaskModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateTask}
         projectId={id!}
       />
+
+      {/* Модальное окно добавления подрядчиков */}
+      {showAddContractorsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">Add Contractors</h3>
+            <div className="space-y-4">
+              {(() => {
+                const availableContractors = contractors.filter(
+                  (contractor) =>
+                    !project?.assignedContractors.some((c) => c.id === contractor.id)
+                );
+
+                if (availableContractors.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 mb-2">No available contractors to add</p>
+                      <p className="text-sm text-gray-400">All contractors are already assigned to this project</p>
+                    </div>
+                  );
+                }
+
+                return availableContractors.map((contractor) => (
+                  <div
+                    key={contractor.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={contractor.avatar || 'https://via.placeholder.com/40'}
+                        alt={contractor.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="font-medium">{contractor.name}</p>
+                        <p className="text-sm text-gray-500">{contractor.role}</p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selectedContractors.includes(contractor.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedContractors([...selectedContractors, contractor.id]);
+                        } else {
+                          setSelectedContractors(
+                            selectedContractors.filter((id) => id !== contractor.id)
+                          );
+                        }
+                      }}
+                      className="h-4 w-4 text-primary-600"
+                    />
+                  </div>
+                ));
+              })()}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddContractorsModal(false);
+                  setSelectedContractors([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleAddContractors}
+                disabled={addContractorsMutation.isPending || selectedContractors.length === 0}
+              >
+                Add Selected Contractors
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

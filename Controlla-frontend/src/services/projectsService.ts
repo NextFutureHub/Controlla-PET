@@ -7,6 +7,7 @@ export interface Contractor {
   id: string;
   name: string;
   avatar: string;
+  role: string;
 }
 
 export interface Task {
@@ -72,8 +73,8 @@ export interface UpdateProjectDto {
   assignedContractors?: string[];
 }
 
-class ProjectsService {
-  private readonly baseUrl = '/api/projects';
+export class ProjectsService {
+  private baseUrl = '/api/projects';
 
   async getAll(): Promise<Project[]> {
     return apiService.get<Project[]>(this.baseUrl);
@@ -84,27 +85,7 @@ class ProjectsService {
   }
 
   async create(data: CreateProjectDto): Promise<Project> {
-    try {
-      // Преобразуем даты в ISO формат и форматируем данные
-      const formattedData = {
-        name: data.name,
-        description: data.description,
-        status: data.status,
-        priority: data.priority,
-        dueDate: new Date(data.dueDate).toISOString(),
-        totalHours: data.totalHours,
-        budget: Number(data.budget),
-        assignedContractors: data.assignedContractors || []
-      };
-      
-      console.log('Formatted data:', formattedData); // Для отладки
-      const project = await apiService.post<Project>(this.baseUrl, formattedData);
-
-      return project;
-    } catch (error) {
-      console.error('Error creating project:', error);
-      throw error;
-    }
+    return apiService.post<Project>(this.baseUrl, data);
   }
 
   async createTask(projectId: string, data: CreateTaskDto): Promise<Task> {
@@ -128,6 +109,23 @@ class ProjectsService {
 
   async delete(id: string): Promise<void> {
     return apiService.delete(`${this.baseUrl}/${id}`);
+  }
+
+  async addContractors(projectId: string, contractorIds: string[]): Promise<Project> {
+    return apiService.patch<Project>(`${this.baseUrl}/${projectId}`, {
+      assignedContractors: contractorIds
+    });
+  }
+
+  async removeContractor(projectId: string, contractorId: string): Promise<Project> {
+    const project = await this.getById(projectId);
+    const updatedContractors = project.assignedContractors
+      .filter(contractor => contractor.id !== contractorId)
+      .map(contractor => contractor.id);
+    
+    return this.update(projectId, {
+      assignedContractors: updatedContractors
+    });
   }
 }
 
