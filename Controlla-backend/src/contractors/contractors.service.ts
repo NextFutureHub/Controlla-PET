@@ -42,8 +42,16 @@ export class ContractorsService {
       if (!contractors) {
         return [];
       }
-      
-      return contractors;
+
+      // Обрабатываем рейтинги перед возвратом
+      return contractors.map(contractor => {
+        if (contractor.rating === null || contractor.rating === undefined || isNaN(Number(contractor.rating))) {
+          contractor.rating = 0;
+        } else {
+          contractor.rating = Number(Number(contractor.rating).toFixed(2));
+        }
+        return contractor;
+      });
     } catch (error) {
       this.logger.error(`Error finding all contractors: ${error.message}`, error.stack);
       if (error instanceof Error) {
@@ -120,11 +128,35 @@ export class ContractorsService {
   async updateRating(id: string, newRating: number): Promise<Contractor> {
     try {
       const contractor = await this.findOne(id);
-      // Обновляем рейтинг как среднее арифметическое
-      contractor.rating = (contractor.rating + newRating) / 2;
-      return await this.contractorsRepository.save(contractor);
+      
+      // Проверяем, что newRating является числом и находится в допустимом диапазоне
+      if (typeof newRating !== 'number' || isNaN(newRating) || newRating < 0 || newRating > 5) {
+        throw new BadRequestException('Rating must be a number between 0 and 5');
+      }
+
+      // Преобразуем текущий рейтинг в число, если он существует
+      let currentRating = 0;
+      if (contractor.rating !== null && contractor.rating !== undefined) {
+        const parsedRating = Number(contractor.rating);
+        if (!isNaN(parsedRating)) {
+          currentRating = parsedRating;
+        }
+      }
+
+      // Вычисляем новый рейтинг
+      const averageRating = (currentRating + newRating) / 2;
+      contractor.rating = Number(averageRating.toFixed(2));
+
+      // Проверяем, что рейтинг не стал NaN
+      if (isNaN(contractor.rating)) {
+        contractor.rating = 0;
+      }
+
+      const savedContractor = await this.contractorsRepository.save(contractor);
+      this.logger.debug(`Updated rating for contractor ${id}: ${savedContractor.rating}`);
+      return savedContractor;
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       this.logger.error(`Error updating contractor rating ${id}: ${error.message}`, error.stack);

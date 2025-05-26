@@ -97,10 +97,20 @@ const Projects = () => {
   };
   
   const formatCurrency = (amount: number) => {
+    if (isNaN(amount) || amount === null || amount === undefined) {
+      return '$0.00';
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  };
+  
+  const formatProgress = (progress: number | null | undefined): string => {
+    if (progress === null || progress === undefined || isNaN(progress)) {
+      return '0%';
+    }
+    return `${Math.min(Math.max(progress, 0), 100)}%`;
   };
   
   const filteredProjects = projects.filter((project) => {
@@ -214,7 +224,7 @@ const Projects = () => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Budget</p>
                 <p className="text-2xl font-semibold mt-1">
-                  {formatCurrency(projects.reduce((acc, p) => acc + p.budget, 0))}
+                  {formatCurrency(projects.reduce((acc, p) => acc + (p.budget || 0), 0))}
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center text-green-600">
@@ -384,16 +394,16 @@ const Projects = () => {
                 <div className="mt-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">Progress</span>
-                    <span className="font-medium">{project.progress}%</span>
+                    <span className="font-medium">{formatProgress(project.progress)}</span>
                   </div>
                   <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        project.progress >= 70 ? 'bg-green-500' :
-                        project.progress >= 50 ? 'bg-yellow-500' :
+                        (project.progress || 0) >= 70 ? 'bg-green-500' :
+                        (project.progress || 0) >= 50 ? 'bg-yellow-500' :
                         'bg-red-500'
                       }`}
-                      style={{ width: `${project.progress}%` }}
+                      style={{ width: `${Math.min(Math.max(project.progress || 0, 0), 100)}%` }}
                     ></div>
                   </div>
                 </div>

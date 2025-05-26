@@ -27,10 +27,18 @@ export interface CreateContractorDto {
   avatar?: File;
 }
 
-export interface UpdateContractorDto extends Partial<CreateContractorDto> {}
+export interface UpdateContractorDto {
+  name?: string;
+  email?: string;
+  role?: string;
+  hourlyRate?: number;
+  location?: string;
+  status?: ContractorStatus;
+  avatar?: File;
+}
 
 class ContractorsService {
-  private readonly baseUrl = '/contractors';
+  private readonly baseUrl = '/api/contractors';
 
   async getAll(): Promise<Contractor[]> {
     const contractors = await apiService.get<Contractor[]>(this.baseUrl);

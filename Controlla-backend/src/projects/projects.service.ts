@@ -170,6 +170,17 @@ export class ProjectsService {
   async remove(id: string): Promise<void> {
     try {
       const project = await this.findOne(id);
+      
+      // Удаляем все связанные задачи
+      if (project.tasks && project.tasks.length > 0) {
+        await this.projectsRepository
+          .createQueryBuilder()
+          .relation(Project, 'tasks')
+          .of(project)
+          .remove(project.tasks);
+      }
+      
+      // Удаляем проект
       await this.projectsRepository.remove(project);
     } catch (error) {
       if (error instanceof NotFoundException) {

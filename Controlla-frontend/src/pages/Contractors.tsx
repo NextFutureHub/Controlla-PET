@@ -50,6 +50,49 @@ const Contractors = () => {
     },
   });
 
+  // Мутация для обновления рейтинга
+  const updateRatingMutation = useMutation({
+    mutationFn: ({ id, rating }: { id: string; rating: number }) =>
+      contractorsService.updateRating(id, rating),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractors'] });
+      toast.success('Contractor rating updated successfully');
+    },
+    onError: (error) => {
+      console.error('Error updating contractor rating:', error);
+      toast.error('Failed to update contractor rating');
+    },
+  });
+
+  const handleRatingUpdate = async (id: string, currentRating: number) => {
+    try {
+      console.log('Current rating before update:', currentRating, typeof currentRating);
+      
+      // Убедимся, что currentRating является числом
+      const rating = Number(currentRating || 0);
+      console.log('Converted rating:', rating, typeof rating);
+      
+      if (isNaN(rating)) {
+        console.error('Invalid rating value:', currentRating);
+        toast.error('Invalid rating value');
+        return;
+      }
+
+      // Вычисляем новый рейтинг, но не превышаем 5
+      const newRating = Math.min(rating + 0.5, 5);
+      console.log('New rating before rounding:', newRating);
+      
+      // Округляем до двух знаков после запятой (как в БД)
+      const roundedRating = Number(newRating.toFixed(2));
+      console.log('Final rounded rating:', roundedRating);
+      
+      await updateRatingMutation.mutateAsync({ id, rating: roundedRating });
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      toast.error('Failed to update rating');
+    }
+  };
+
   const handleSort = (field: 'name' | 'rating' | 'hourlyRate') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -262,7 +305,24 @@ const Contractors = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Star size={16} className="text-yellow-400 mr-1" />
-                        <span className="text-sm text-gray-900">{contractor.rating}</span>
+                        <span className="text-sm text-gray-900">
+                          {(() => {
+                            const rating = Number(contractor.rating || 0);
+                            console.log('Display rating:', contractor.rating, typeof contractor.rating, 'Converted:', rating);
+                            return !isNaN(rating) ? rating.toFixed(2) : '0.00';
+                          })()}
+                        </span>
+                        <button
+                          onClick={() => {
+                            console.log('Button clicked, contractor:', contractor);
+                            const currentRating = Number(contractor.rating || 0);
+                            handleRatingUpdate(contractor.id, currentRating);
+                          }}
+                          className="ml-2 text-gray-400 hover:text-yellow-400"
+                          disabled={updateRatingMutation.isPending}
+                        >
+                          <Plus size={14} />
+                        </button>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

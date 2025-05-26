@@ -44,9 +44,9 @@ export interface CreateProjectDto {
   status: ProjectStatus;
   priority: ProjectPriority;
   dueDate: string;
-  totalHours: number;
+  totalHours?: number;
   budget: number;
-  assignedContractors: Contractor[];
+  assignedContractors?: string[];
 }
 
 export interface CreateTaskDto {
@@ -61,13 +61,22 @@ export interface CreateTaskDto {
   weight: number;
 }
 
-export interface UpdateProjectDto extends Partial<CreateProjectDto> {}
+export interface UpdateProjectDto {
+  name?: string;
+  description?: string;
+  status?: ProjectStatus;
+  priority?: ProjectPriority;
+  dueDate?: string;
+  totalHours?: number;
+  budget?: number;
+  assignedContractors?: string[];
+}
 
 class ProjectsService {
-  private readonly baseUrl = '/projects';
+  private readonly baseUrl = '/api/projects';
 
   async getAll(): Promise<Project[]> {
-    return apiService.get<Project[]>('/projects');
+    return apiService.get<Project[]>(this.baseUrl);
   }
 
   async getById(id: string): Promise<Project> {
@@ -89,7 +98,7 @@ class ProjectsService {
       };
       
       console.log('Formatted data:', formattedData); // Для отладки
-      const project = await apiService.post<Project>('/projects', formattedData);
+      const project = await apiService.post<Project>(this.baseUrl, formattedData);
 
       return project;
     } catch (error) {

@@ -19,6 +19,9 @@ class ApiService {
       (error) => {
         // Здесь можно добавить глобальную обработку ошибок
         console.error('API Error:', error.response?.data || error.message);
+        if (error.response?.status === 404) {
+          console.error(`Endpoint not found: ${error.config?.url}`);
+        }
         return Promise.reject(error);
       }
     );

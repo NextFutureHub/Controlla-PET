@@ -8,7 +8,7 @@ import { ContractorStatus } from './entities/contractor.entity';
 import { multerConfig } from '../config/multer.config';
 
 @ApiTags('contractors')
-@Controller('contractors')
+@Controller('api/contractors')
 export class ContractorsController {
   constructor(private readonly contractorsService: ContractorsService) {}
 

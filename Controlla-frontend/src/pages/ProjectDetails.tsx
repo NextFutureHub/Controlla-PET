@@ -68,7 +68,7 @@ const ProjectDetails = () => {
   const handleDeleteTask = async (taskId: string) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        await tasksService.delete(taskId);
+        await tasksService.delete(id!, taskId);
         await fetchProject();
       } catch (error) {
         console.error('Error deleting task:', error);
