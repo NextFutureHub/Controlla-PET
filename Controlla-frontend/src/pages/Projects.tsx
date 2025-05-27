@@ -13,7 +13,9 @@ const Projects = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | ProjectStatus>('all');
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -34,8 +36,9 @@ const Projects = () => {
 
   const fetchProjects = async () => {
     try {
-      const data = await projectsService.getAll();
-      setProjects(data);
+      const response = await projectsService.getAll(currentPage);
+      setProjects(response.projects);
+      setTotalPages(response.totalPages);
       setError(null);
     } catch (err) {
       setError('Failed to load projects');
@@ -47,7 +50,7 @@ const Projects = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [currentPage]);
 
   const handleCreateProject = async (data: CreateProjectDto) => {
     try {
@@ -447,11 +450,47 @@ const Projects = () => {
         </CardContent>
       </Card>
 
-      <CreateProjectModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateProject}
-      />
+      {/* Pagination */}
+      <div className="flex justify-center space-x-2 mt-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        
+        <div className="flex items-center space-x-2">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <Button
+              key={page}
+              variant={currentPage === page ? "primary" : "outline"}
+              size="sm"
+              onClick={() => setCurrentPage(page)}
+            >
+              {page}
+            </Button>
+          ))}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
+      </div>
+
+      {showCreateModal && (
+        <CreateProjectModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateProject}
+        />
+      )}
     </div>
   );
 };

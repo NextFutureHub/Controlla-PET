@@ -1,13 +1,16 @@
 import { apiService } from './apiService';
 
 export type ProjectStatus = 'planning' | 'in-progress' | 'on-hold' | 'review' | 'completed' | 'cancelled';
-export type ProjectPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type ProjectPriority = 'low' | 'medium' | 'high';
 
 export interface Contractor {
   id: string;
   name: string;
-  avatar: string;
+  email: string;
   role: string;
+  hourlyRate: number;
+  status: string;
+  avatar?: string;
 }
 
 export interface Task {
@@ -19,8 +22,10 @@ export interface Task {
   progress: number;
   estimatedHours: number;
   loggedHours: number;
-  dueDate: string;
   weight: number;
+  dueDate: string;
+  projectId: string;
+  subtasks: any[];
 }
 
 export interface Project {
@@ -53,13 +58,13 @@ export interface CreateProjectDto {
 export interface CreateTaskDto {
   name: string;
   description: string;
-  status: string;
-  priority: string;
-  progress: number;
+  status?: string;
+  priority?: string;
+  progress?: number;
   estimatedHours: number;
-  loggedHours: number;
+  loggedHours?: number;
+  weight?: number;
   dueDate: string;
-  weight: number;
 }
 
 export interface UpdateProjectDto {
@@ -73,11 +78,17 @@ export interface UpdateProjectDto {
   assignedContractors?: string[];
 }
 
+export interface PaginatedResponse<T> {
+  projects: T[];
+  total: number;
+  totalPages: number;
+}
+
 export class ProjectsService {
   private baseUrl = '/api/projects';
 
-  async getAll(): Promise<Project[]> {
-    return apiService.get<Project[]>(this.baseUrl);
+  async getAll(page = 1, limit = 3): Promise<PaginatedResponse<Project>> {
+    return apiService.get<PaginatedResponse<Project>>(this.baseUrl, { page, limit });
   }
 
   async getById(id: string): Promise<Project> {
@@ -129,4 +140,4 @@ export class ProjectsService {
   }
 }
 
-export const projectsService = new ProjectsService(); 
+export const projectsService = new ProjectsService();

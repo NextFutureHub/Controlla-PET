@@ -83,10 +83,15 @@ export class ProjectsService {
     }
   }
 
-  async findAll(): Promise<Project[]> {
+  async findAll(page = 1, limit = 3): Promise<{ projects: Project[]; total: number; totalPages: number }> {
     try {
-      const projects = await this.projectsRepository.find({
+      const [projects, total] = await this.projectsRepository.findAndCount({
         relations: ['assignedContractors', 'tasks'],
+        skip: (page - 1) * limit,
+        take: limit,
+        order: {
+          createdAt: 'DESC'
+        }
       });
       
       // Обновляем totalHours для каждого проекта
@@ -94,7 +99,13 @@ export class ProjectsService {
         await this.updateProjectTotalHours(project);
       }
       
-      return projects;
+      const totalPages = Math.ceil(total / limit);
+      
+      return {
+        projects,
+        total,
+        totalPages
+      };
     } catch (error) {
       this.logger.error(`Error finding all projects: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Error retrieving projects');

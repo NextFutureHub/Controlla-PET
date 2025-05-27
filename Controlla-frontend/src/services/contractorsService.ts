@@ -39,15 +39,17 @@ export interface UpdateContractorDto {
   avatar?: File;
 }
 
-class ContractorsService {
-  private readonly baseUrl = '/api/contractors';
+export interface PaginatedResponse<T> {
+  contractors: T[];
+  total: number;
+  totalPages: number;
+}
 
-  async getAll(): Promise<Contractor[]> {
-    const contractors = await apiService.get<Contractor[]>(this.baseUrl);
-    return contractors.map(contractor => ({
-      ...contractor,
-      avatar: contractor.avatar ? `${API_URL}${contractor.avatar}` : undefined
-    }));
+export class ContractorsService {
+  private baseUrl = '/api/contractors';
+
+  async getAll(page = 1, limit = 10): Promise<PaginatedResponse<Contractor>> {
+    return apiService.get<PaginatedResponse<Contractor>>(this.baseUrl, { page, limit });
   }
 
   async getById(id: string): Promise<Contractor> {

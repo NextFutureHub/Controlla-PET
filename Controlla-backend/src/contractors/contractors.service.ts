@@ -32,31 +32,25 @@ export class ContractorsService {
     }
   }
 
-  async findAll(): Promise<Contractor[]> {
+  async findAll(page = 1, limit = 10): Promise<{ contractors: Contractor[]; total: number; totalPages: number }> {
     try {
-      const contractors = await this.contractorsRepository
-        .createQueryBuilder('contractor')
-        .leftJoinAndSelect('contractor.projects', 'project')
-        .getMany();
-      
-      if (!contractors) {
-        return [];
-      }
-
-      // Обрабатываем рейтинги перед возвратом
-      return contractors.map(contractor => {
-        if (contractor.rating === null || contractor.rating === undefined || isNaN(Number(contractor.rating))) {
-          contractor.rating = 0;
-        } else {
-          contractor.rating = Number(Number(contractor.rating).toFixed(2));
+      const [contractors, total] = await this.contractorsRepository.findAndCount({
+        skip: (page - 1) * limit,
+        take: limit,
+        order: {
+          createdAt: 'DESC'
         }
-        return contractor;
       });
+      
+      const totalPages = Math.ceil(total / limit);
+      
+      return {
+        contractors,
+        total,
+        totalPages
+      };
     } catch (error) {
       this.logger.error(`Error finding all contractors: ${error.message}`, error.stack);
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(`Error retrieving contractors: ${error.message}`);
-      }
       throw new InternalServerErrorException('Error retrieving contractors');
     }
   }

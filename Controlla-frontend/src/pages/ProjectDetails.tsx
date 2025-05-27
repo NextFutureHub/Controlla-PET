@@ -46,26 +46,21 @@ const ProjectDetails = () => {
     enabled: !!id,
   });
 
-  // Получение списка подрядчиков
-  const { data: contractors = [] } = useQuery({
+  const { data: contractors = { contractors: [], total: 0, totalPages: 0 } } = useQuery({
     queryKey: ['contractors'],
     queryFn: () => contractorsService.getAll(),
   });
 
-  // Мутация для добавления подрядчиков
   const addContractorsMutation = useMutation({
     mutationFn: ({ projectId, contractorIds }: { projectId: string; contractorIds: string[] }) =>
       projectsService.addContractors(projectId, contractorIds),
     onMutate: async ({ projectId, contractorIds }) => {
-      // Отменяем исходящие запросы
       await queryClient.cancelQueries({ queryKey: ['project', projectId] });
 
-      // Сохраняем предыдущее состояние
       const previousProject = queryClient.getQueryData(['project', projectId]);
 
-      // Оптимистично обновляем данные
       queryClient.setQueryData(['project', projectId], (old: any) => {
-        const newContractors = contractors
+        const newContractors = contractors.contractors
           .filter(c => contractorIds.includes(c.id))
           .map(c => ({
             id: c.id,
@@ -83,7 +78,6 @@ const ProjectDetails = () => {
       return { previousProject };
     },
     onError: (err, variables, context) => {
-      // В случае ошибки возвращаем предыдущее состояние
       if (context?.previousProject) {
         queryClient.setQueryData(['project', id], context.previousProject);
       }
@@ -98,18 +92,14 @@ const ProjectDetails = () => {
     },
   });
 
-  // Мутация для удаления подрядчика
   const removeContractorMutation = useMutation({
     mutationFn: ({ projectId, contractorId }: { projectId: string; contractorId: string }) =>
       projectsService.removeContractor(projectId, contractorId),
     onMutate: async ({ projectId, contractorId }) => {
-      // Отменяем исходящие запросы
       await queryClient.cancelQueries({ queryKey: ['project', projectId] });
 
-      // Сохраняем предыдущее состояние
       const previousProject = queryClient.getQueryData(['project', projectId]);
 
-      // Оптимистично обновляем данные
       queryClient.setQueryData(['project', projectId], (old: any) => ({
         ...old,
         assignedContractors: old?.assignedContractors.filter((c: any) => c.id !== contractorId) || []
@@ -118,14 +108,12 @@ const ProjectDetails = () => {
       return { previousProject };
     },
     onError: (err, variables, context) => {
-      // В случае ошибки возвращаем предыдущее состояние
       if (context?.previousProject) {
         queryClient.setQueryData(['project', id], context.previousProject);
       }
       toast.error('Failed to remove contractor');
     },
     onSettled: () => {
-      // В любом случае инвалидируем запрос для получения актуальных данных
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       toast.success('Contractor removed successfully');
     },
@@ -422,7 +410,7 @@ const ProjectDetails = () => {
             <h3 className="text-lg font-semibold mb-4">Add Contractors</h3>
             <div className="space-y-4">
               {(() => {
-                const availableContractors = contractors.filter(
+                const availableContractors = contractors.contractors.filter(
                   (contractor) =>
                     !project?.assignedContractors.some((c) => c.id === contractor.id)
                 );

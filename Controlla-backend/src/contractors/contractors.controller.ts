@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, InternalServerErrorException, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ContractorsService } from './contractors.service';
 import { CreateContractorDto } from './dto/create-contractor.dto';
@@ -6,6 +6,7 @@ import { UpdateContractorDto } from './dto/update-contractor.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ContractorStatus } from './entities/contractor.entity';
 import { multerConfig } from '../config/multer.config';
+import { PaginationDto } from './dto/pagination.dto';
 
 @ApiTags('contractors')
 @Controller('api/contractors')
@@ -59,18 +60,10 @@ export class ContractorsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all contractors' })
-  @ApiResponse({ status: 200, description: 'Return all contractors' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
-  async findAll() {
-    try {
-      return await this.contractorsService.findAll();
-    } catch (error) {
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Error retrieving contractors');
-    }
+  @ApiOperation({ summary: 'Получить всех подрядчиков' })
+  @ApiResponse({ status: 200, description: 'Список всех подрядчиков' })
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.contractorsService.findAll(paginationDto.page, paginationDto.limit);
   }
 
   @Get(':id')

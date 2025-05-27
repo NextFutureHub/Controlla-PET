@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -15,18 +15,21 @@ const Contractors = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<'all' | ContractorStatus>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const queryClient = useQueryClient();
 
   // Получение списка подрядчиков
   const { data: contractors = [], isLoading, error } = useQuery({
-    queryKey: ['contractors'],
+    queryKey: ['contractors', currentPage],
     queryFn: async () => {
       try {
         console.log('Fetching contractors...');
-        const data = await contractorsService.getAll();
+        const data = await contractorsService.getAll(currentPage);
         console.log('Contractors data:', data);
-        return data;
+        setTotalPages(data.totalPages);
+        return data.contractors;
       } catch (error) {
         console.error('Error fetching contractors:', error);
         throw error;
@@ -41,7 +44,7 @@ const Contractors = () => {
     mutationFn: ({ id, status }: { id: string; status: ContractorStatus }) =>
       contractorsService.updateStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contractors'] });
+      queryClient.invalidateQueries({ queryKey: ['contractors', currentPage] });
       toast.success('Contractor status updated successfully');
     },
     onError: (error) => {
@@ -55,7 +58,7 @@ const Contractors = () => {
     mutationFn: ({ id, rating }: { id: string; rating: number }) =>
       contractorsService.updateRating(id, rating),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contractors'] });
+      queryClient.invalidateQueries({ queryKey: ['contractors', currentPage] });
       toast.success('Contractor rating updated successfully');
     },
     onError: (error) => {
@@ -357,6 +360,37 @@ const Contractors = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      <div className="mt-8 flex justify-center items-center space-x-2">
+        <button
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-4 py-2 border rounded-md disabled:opacity-50"
+        >
+          Previous
+        </button>
+        
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`px-4 py-2 border rounded-md ${
+              currentPage === page ? 'bg-blue-500 text-white' : ''
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        <button
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 border rounded-md disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

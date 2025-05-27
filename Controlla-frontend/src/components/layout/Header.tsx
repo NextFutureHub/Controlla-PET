@@ -85,7 +85,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
               </div>
               
               <div className="p-3 text-center border-t border-gray-200">
-                <Button variant="link" size="sm">View all notifications</Button>
+                <Button variant="ghost" size="sm">View all notifications</Button>
               </div>
             </div>
           )}

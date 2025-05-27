@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { PaginationDto } from './dto/pagination.dto';
 
 @ApiTags('projects')
 @Controller('api/projects')
@@ -20,8 +21,8 @@ export class ProjectsController {
   @Get()
   @ApiOperation({ summary: 'Получить все проекты' })
   @ApiResponse({ status: 200, description: 'Список всех проектов' })
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.projectsService.findAll(paginationDto.page, paginationDto.limit);
   }
 
   @Get(':id')
