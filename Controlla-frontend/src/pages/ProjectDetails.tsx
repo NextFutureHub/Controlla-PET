@@ -9,7 +9,7 @@ import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Plus, Clock, Users, Calendar, AlertCircle, MoreHorizontal, Trash2, X } from 'lucide-react';
 import { projectsService, Project } from '../services/projectsService';
-import { tasksService, Task, CreateTaskDto } from '../services/tasksService';
+import { tasksService, Task } from '../services/tasksService';
 import { getProjectStatusInfo } from '../utils/projectStatus';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { contractorsService, Contractor } from '../services/contractorsService';
@@ -21,6 +21,11 @@ interface CreateTaskFormData {
   estimatedHours: number;
   dueDate: string;
   priority: string;
+}
+
+interface ProjectWithDates extends Project {
+  startDate: string;
+  endDate?: string;
 }
 
 const ProjectDetails = () => {
@@ -40,7 +45,7 @@ const ProjectDetails = () => {
   const [selectedContractors, setSelectedContractors] = useState<string[]>([]);
 
   // Получение данных проекта с использованием React Query
-  const { data: project, isLoading: isLoadingProject } = useQuery({
+  const { data: project, isLoading: isLoadingProject } = useQuery<ProjectWithDates>({
     queryKey: ['project', id],
     queryFn: () => projectsService.getById(id!),
     enabled: !!id,
@@ -138,7 +143,7 @@ const ProjectDetails = () => {
     });
   };
 
-  const handleCreateTask = async (data: CreateTaskDto) => {
+  const handleCreateTask = async (data: Partial<Task>) => {
     try {
       await tasksService.create(data);
       queryClient.invalidateQueries({ queryKey: ['project', id] });
@@ -151,7 +156,7 @@ const ProjectDetails = () => {
   const handleDeleteTask = async (taskId: string) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        await tasksService.delete(id!, taskId);
+        await tasksService.delete(taskId);
         queryClient.invalidateQueries({ queryKey: ['project', id] });
       } catch (error) {
         console.error('Error deleting task:', error);
@@ -171,6 +176,17 @@ const ProjectDetails = () => {
     }).format(amount);
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: () => projectsService.delete(id!),
+    onSuccess: () => {
+      toast.success('Project deleted successfully');
+      navigate('/projects');
+    },
+    onError: () => {
+      toast.error('Failed to delete project');
+    },
+  });
+
   if (isLoadingProject) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -189,296 +205,43 @@ const ProjectDetails = () => {
 
   const statusInfo = getProjectStatusInfo(project.progress, project.dueDate, project.updatedAt);
 
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      deleteMutation.mutate();
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-          <p className="mt-1 text-sm text-gray-500">{project.description}</p>
-        </div>
-        <div className="mt-3 sm:mt-0">
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus size={16} />}
-            onClick={() => setShowCreateModal(true)}
-          >
-            Add Task
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Status</p>
-                <div className="flex items-center space-x-2 mt-1">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                    {statusInfo.message}
-                  </span>
-                  {statusInfo.indicator === 'error' && (
-                    <AlertCircle className="w-4 h-4 text-red-500" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Progress</p>
-                <p className="text-2xl font-semibold mt-1">{project.progress}%</p>
-              </div>
-              <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
-                <Clock size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Budget</p>
-                <p className="text-2xl font-semibold mt-1">{formatCurrency(project.budget)}</p>
-              </div>
-              <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                <Users size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Due Date</p>
-                <p className="text-2xl font-semibold mt-1">{formatDate(project.dueDate)}</p>
-              </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
-                <Calendar size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="container mx-auto py-6">
       <Card>
-        <CardHeader className="border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <CardTitle>Tasks</CardTitle>
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Plus size={16} />}
-              onClick={() => setShowCreateModal(true)}
-            >
-              Add Task
-            </Button>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 gap-5">
-            {project?.tasks.map((task) => (
-              <div
-                key={task.id}
-                className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{task.name}</h3>
-                    <p className="text-sm text-gray-500">{task.description}</p>
-                  </div>
-                  <div className="relative">
-                    <button 
-                      className="text-gray-400 hover:text-gray-500"
-                      onClick={() => setActiveDropdown(activeDropdown === task.id ? null : task.id)}
-                    >
-                      <MoreHorizontal size={20} />
-                    </button>
-                    {activeDropdown === task.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                        <div className="py-1">
-                          <button
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 size={16} className="mr-2" />
-                            Delete Task
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-1 text-gray-500">
-                      <Clock size={16} />
-                      <span>{task.estimatedHours} hours</span>
-                    </div>
-                    <div className="flex items-center space-x-1 text-gray-500">
-                      <Calendar size={16} />
-                      <span>{formatDate(task.dueDate)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-500">Progress:</span>
-                    <span className="font-medium">{task.progress}%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {(!project?.tasks || project.tasks.length === 0) && (
-              <div className="text-center py-10">
-                <p className="text-gray-500">No tasks found</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users size={20} />
-            <span>Assigned Contractors</span>
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAddContractorsModal(true)}
-          >
-            <Plus size={16} className="mr-2" />
-            Add Contractors
-          </Button>
+        <CardHeader>
+          <CardTitle>{project?.name}</CardTitle>
         </CardHeader>
         <CardContent>
-          {project?.assignedContractors && project.assignedContractors.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {project.assignedContractors.map((contractor) => (
-                <div
-                  key={contractor.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={contractor.avatar || 'https://via.placeholder.com/40'}
-                      alt={contractor.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-medium">{contractor.name}</p>
-                      <p className="text-sm text-gray-500">{contractor.role}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveContractor(contractor.id)}
-                    className="text-gray-400 hover:text-red-500"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              ))}
+          <div className="grid gap-4">
+            <div>
+              <h3 className="text-lg font-semibold">Description</h3>
+              <p className="text-gray-600">{project?.description}</p>
             </div>
-          ) : (
-            <p className="text-gray-500 text-center py-4">No contractors assigned to this project</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <CreateTaskModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateTask}
-        projectId={id!}
-      />
-
-      {/* Модальное окно добавления подрядчиков */}
-      {showAddContractorsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-            <h3 className="text-lg font-semibold mb-4">Add Contractors</h3>
-            <div className="space-y-4">
-              {(() => {
-                const availableContractors = contractors.contractors.filter(
-                  (contractor) =>
-                    !project?.assignedContractors.some((c) => c.id === contractor.id)
-                );
-
-                if (availableContractors.length === 0) {
-                  return (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 mb-2">No available contractors to add</p>
-                      <p className="text-sm text-gray-400">All contractors are already assigned to this project</p>
-                    </div>
-                  );
-                }
-
-                return availableContractors.map((contractor) => (
-                  <div
-                    key={contractor.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={contractor.avatar || 'https://via.placeholder.com/40'}
-                        alt={contractor.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="font-medium">{contractor.name}</p>
-                        <p className="text-sm text-gray-500">{contractor.role}</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={selectedContractors.includes(contractor.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedContractors([...selectedContractors, contractor.id]);
-                        } else {
-                          setSelectedContractors(
-                            selectedContractors.filter((id) => id !== contractor.id)
-                          );
-                        }
-                      }}
-                      className="h-4 w-4 text-primary-600"
-                    />
-                  </div>
-                ));
-              })()}
+            <div>
+              <h3 className="text-lg font-semibold">Status</h3>
+              <p className="text-gray-600">{project?.status}</p>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAddContractorsModal(false);
-                  setSelectedContractors([]);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleAddContractors}
-                disabled={addContractorsMutation.isPending || selectedContractors.length === 0}
-              >
-                Add Selected Contractors
-              </Button>
+            <div>
+              <h3 className="text-lg font-semibold">Start Date</h3>
+              <p className="text-gray-600">{project?.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">End Date</h3>
+              <p className="text-gray-600">{project?.endDate ? new Date(project.endDate).toLocaleDateString() : 'Not set'}</p>
+            </div>
+            <div className="flex gap-4">
+              <Button variant="outline">Edit Project</Button>
+              <Button variant="danger" onClick={handleDelete}>Delete Project</Button>
             </div>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

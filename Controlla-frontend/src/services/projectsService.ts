@@ -1,4 +1,7 @@
-import { apiService } from './apiService';
+import axios from 'axios';
+import { authService } from './authService';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export type ProjectStatus = 'planning' | 'in-progress' | 'on-hold' | 'review' | 'completed' | 'cancelled';
 export type ProjectPriority = 'low' | 'medium' | 'high';
@@ -32,16 +35,21 @@ export interface Project {
   id: string;
   name: string;
   description: string;
-  status: ProjectStatus;
-  priority: ProjectPriority;
+  status: string;
   progress: number;
+  startDate: string;
+  endDate?: string;
   dueDate: string;
-  totalHours: number;
-  budget: number;
-  assignedContractors: Contractor[];
-  tasks: Task[];
-  createdAt: string;
   updatedAt: string;
+  createdAt: string;
+  budget?: number;
+  totalHours?: number;
+  assignedContractors?: Array<{
+    id: string;
+    name: string;
+    avatar?: string;
+    role: string;
+  }>;
 }
 
 export interface CreateProjectDto {
@@ -79,24 +87,40 @@ export interface UpdateProjectDto {
 }
 
 export interface PaginatedResponse<T> {
-  projects: T[];
+  data: T[];
   total: number;
+  page: number;
+  limit: number;
   totalPages: number;
 }
 
-export class ProjectsService {
-  private baseUrl = '/api/projects';
+class ProjectsService {
+  private getHeaders() {
+    return {
+      Authorization: `Bearer ${authService.getAccessToken()}`,
+    };
+  }
 
-  async getAll(page = 1, limit = 3): Promise<PaginatedResponse<Project>> {
-    return apiService.get<PaginatedResponse<Project>>(this.baseUrl, { page, limit });
+  async getAll(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Project>> {
+    const response = await axios.get(`${API_URL}/projects`, {
+      headers: this.getHeaders(),
+      params: { page, limit },
+    });
+    return response.data;
   }
 
   async getById(id: string): Promise<Project> {
-    return apiService.get<Project>(`${this.baseUrl}/${id}`);
+    const response = await axios.get(`${API_URL}/projects/${id}`, {
+      headers: this.getHeaders(),
+    });
+    return response.data;
   }
 
   async create(data: CreateProjectDto): Promise<Project> {
-    return apiService.post<Project>(this.baseUrl, data);
+    const response = await axios.post(`${API_URL}/projects`, data, {
+      headers: this.getHeaders(),
+    });
+    return response.data;
   }
 
   async createTask(projectId: string, data: CreateTaskDto): Promise<Task> {
@@ -107,36 +131,48 @@ export class ProjectsService {
         projectId
       };
       
-      return await apiService.post<Task>(`${this.baseUrl}/${projectId}/tasks`, formattedData);
+      const response = await axios.post(`${API_URL}/projects/${projectId}/tasks`, formattedData, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
     } catch (error) {
       console.error('Error creating task:', error);
       throw error;
     }
   }
 
-  async update(id: string, data: UpdateProjectDto): Promise<Project> {
-    return apiService.patch<Project>(`${this.baseUrl}/${id}`, data);
+  async update(id: string, data: Partial<Project>): Promise<Project> {
+    const response = await axios.patch(`${API_URL}/projects/${id}`, data, {
+      headers: this.getHeaders(),
+    });
+    return response.data;
   }
 
   async delete(id: string): Promise<void> {
-    return apiService.delete(`${this.baseUrl}/${id}`);
+    await axios.delete(`${API_URL}/projects/${id}`, {
+      headers: this.getHeaders(),
+    });
   }
 
   async addContractors(projectId: string, contractorIds: string[]): Promise<Project> {
-    return apiService.patch<Project>(`${this.baseUrl}/${projectId}`, {
-      assignedContractors: contractorIds
-    });
+    const response = await axios.post(
+      `${API_URL}/projects/${projectId}/contractors`,
+      { contractorIds },
+      {
+        headers: this.getHeaders(),
+      }
+    );
+    return response.data;
   }
 
   async removeContractor(projectId: string, contractorId: string): Promise<Project> {
-    const project = await this.getById(projectId);
-    const updatedContractors = project.assignedContractors
-      .filter(contractor => contractor.id !== contractorId)
-      .map(contractor => contractor.id);
-    
-    return this.update(projectId, {
-      assignedContractors: updatedContractors
-    });
+    const response = await axios.delete(
+      `${API_URL}/projects/${projectId}/contractors/${contractorId}`,
+      {
+        headers: this.getHeaders(),
+      }
+    );
+    return response.data;
   }
 }
 

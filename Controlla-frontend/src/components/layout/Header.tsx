@@ -100,10 +100,15 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
             />
           ) : (
             <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium">
-              {user?.name.charAt(0)}
+              {user?.name ? user.name.charAt(0) : '?'}
             </div>
           )}
-          <span className="text-sm font-medium text-gray-700 hidden sm:block">{user?.name}</span>
+          <div className="hidden sm:block">
+            <span className="text-sm font-medium text-gray-700 block">{user?.name}</span>
+            <span className="text-xs text-primary-600 font-medium capitalize">
+              {user?.role?.replace('_', ' ')}
+            </span>
+          </div>
         </div>
       </div>
     </header>

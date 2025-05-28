@@ -100,12 +100,15 @@ const Sidebar = () => {
               />
             ) : (
               <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium">
-                {user?.name.charAt(0)}
+                {user?.name ? user.name.charAt(0) : '?'}
               </div>
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-xs text-primary-600 font-medium capitalize truncate">
+                {user?.role?.replace('_', ' ')}
+              </p>
             </div>
           </div>
         </div>

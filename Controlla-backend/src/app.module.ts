@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ProjectsModule } from './projects/projects.module';
 import { ContractorsModule } from './contractors/contractors.module';
 import { TasksModule } from './tasks/tasks.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 @Module({
   imports: [
@@ -27,6 +31,14 @@ import { TasksModule } from './tasks/tasks.module';
     ProjectsModule,
     ContractorsModule,
     TasksModule,
+    UsersModule,
+    AuthModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
   ],
 })
 export class AppModule {}

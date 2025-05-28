@@ -37,12 +37,13 @@ const Projects = () => {
   const fetchProjects = async () => {
     try {
       const response = await projectsService.getAll(currentPage);
-      setProjects(response.projects);
+      setProjects(response.data || []);
       setTotalPages(response.totalPages);
       setError(null);
     } catch (err) {
       setError('Failed to load projects');
       console.error('Error loading projects:', err);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -243,7 +244,7 @@ const Projects = () => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Hours</p>
                 <p className="text-2xl font-semibold mt-1">
-                  {projects.reduce((acc, p) => acc + p.totalHours, 0)}
+                  {projects.reduce((acc, p) => acc + (p.totalHours || 0), 0)}
                 </p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
@@ -414,7 +415,7 @@ const Projects = () => {
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="flex -space-x-2">
-                      {project.assignedContractors.map((contractor) => (
+                      {(project.assignedContractors || []).map((contractor) => (
                         <img
                           key={contractor.id}
                           src={contractor.avatar}
@@ -435,7 +436,7 @@ const Projects = () => {
                   </div>
                   <div className="text-sm">
                     <span className="text-gray-500">Budget: </span>
-                    <span className="font-medium">{formatCurrency(project.budget)}</span>
+                    <span className="font-medium">{formatCurrency(project.budget || 0)}</span>
                   </div>
                 </div>
               </div>
