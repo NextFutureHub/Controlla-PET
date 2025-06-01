@@ -1,22 +1,46 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { RegisterDto } from '../services/authService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
+enum UserRole {
+  SUPER_ADMIN = 'super_admin',
+  TENANT_ADMIN = 'tenant_admin',
+  PROJECT_MANAGER = 'project_manager',
+  CONTRACTOR_COMPANY = 'contractor_company',
+  CONTRACTOR_EMPLOYEE = 'contractor_employee',
+  FINANCIAL_MANAGER = 'financial_manager',
+  CLIENT = 'client',
+  GUEST = 'guest'
+}
+
+const roleLabels: Record<UserRole, string> = {
+  [UserRole.SUPER_ADMIN]: 'Super Administrator',
+  [UserRole.TENANT_ADMIN]: 'Tenant Administrator',
+  [UserRole.PROJECT_MANAGER]: 'Project Manager',
+  [UserRole.CONTRACTOR_COMPANY]: 'Contractor Company',
+  [UserRole.CONTRACTOR_EMPLOYEE]: 'Contractor Employee',
+  [UserRole.FINANCIAL_MANAGER]: 'Financial Manager',
+  [UserRole.CLIENT]: 'Client',
+  [UserRole.GUEST]: 'Guest'
+};
+
 const Register = () => {
   const { register } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<RegisterDto>({
     email: '',
     password: '',
     firstName: '',
     lastName: '',
+    role: UserRole.CLIENT, // Default role
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -29,8 +53,14 @@ const Register = () => {
     setIsLoading(true);
     try {
       await register(formData);
+      // Если пользователь - Tenant Administrator, перенаправляем на форму компании
+      if (formData.role === UserRole.TENANT_ADMIN) {
+        navigate('/company-registration');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error('Ошибка при регистрации:', error);
     } finally {
       setIsLoading(false);
     }
@@ -106,6 +136,25 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                 />
+              </div>
+              <div>
+                <label htmlFor="role" className="sr-only">
+                  Role
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  value={formData.role}
+                  onChange={handleChange}
+                  required
+                >
+                  {Object.values(UserRole).map((role) => (
+                    <option key={role} value={role}>
+                      {roleLabels[role]}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
