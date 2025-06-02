@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { companyService, CompanyData } from '../services/companyService';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 const CompanyRegistration = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<CompanyData>({
     name: '',
     description: '',
@@ -17,6 +19,13 @@ const CompanyRegistration = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof CompanyData, string>>>({});
+
+  useEffect(() => {
+    // Redirect if user is not a tenant admin
+    if (user?.role !== 'tenant_admin') {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof CompanyData, string>> = {};
@@ -68,7 +77,7 @@ const CompanyRegistration = () => {
     }
     setIsLoading(true);
     try {
-      await companyService.createCompany(formData);
+      const companyData = await companyService.createCompany(formData);
       toast.success('Информация о компании успешно сохранена');
       navigate('/dashboard');
     } catch (error: any) {

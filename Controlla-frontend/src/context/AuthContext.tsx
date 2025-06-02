@@ -18,7 +18,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (data: LoginDto) => Promise<void>;
-  register: (data: RegisterDto) => Promise<void>;
+  register: (data: RegisterDto) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -63,14 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (data: RegisterDto) => {
+  const register = async (data: RegisterDto): Promise<User> => {
     try {
       const response = await authService.register(data);
       authService.setTokens(response.access_token, response.refresh_token);
       authService.setUser(response.user);
       setUser(response.user);
       toast.success('Registration successful');
-      navigate('/dashboard');
+      return response.user;
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
       throw error;

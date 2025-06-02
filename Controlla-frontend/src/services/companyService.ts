@@ -37,6 +37,15 @@ class CompanyService {
     });
     return response.data;
   }
+
+  async getCompanyById(id: string): Promise<any> {
+    const response = await axios.get(`${API_URL}/companies/${id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    });
+    return response.data;
+  }
 }
 
 export const companyService = new CompanyService(); 

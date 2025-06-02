@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Users, Clock, DollarSign, AlertCircle, ArrowRight, BarChart2, ArrowUpRight } from 'lucide-react';
 import Button from '../components/ui/Button';
@@ -14,6 +14,8 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { companyService } from '../services/companyService';
+import { useAuth } from '../context/AuthContext';
 
 // Register ChartJS components
 ChartJS.register(
@@ -29,6 +31,23 @@ ChartJS.register(
 
 const Dashboard = () => {
   const [selectedTab, setSelectedTab] = useState('week');
+  const [companyName, setCompanyName] = useState('');
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      if (user?.role === 'tenant_admin') {
+        try {
+          const companyData = await companyService.getCompany();
+          setCompanyName(companyData.name);
+        } catch (error) {
+          console.error('Error fetching company data:', error);
+        }
+      }
+    };
+    
+    fetchCompanyData();
+  }, [user]);
   
   // Mock data for charts
   const chartData = {
@@ -170,7 +189,12 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          {companyName && (
+            <p className="text-sm text-gray-500 mt-1">Company: {companyName}</p>
+          )}
+        </div>
         <div className="mt-3 sm:mt-0">
           <Button variant="primary" size="sm" rightIcon={<ArrowUpRight size={16} />}>
             Generate Report

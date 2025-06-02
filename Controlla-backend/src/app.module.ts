@@ -8,6 +8,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { CompaniesModule } from './companies/companies.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     TasksModule,
     UsersModule,
     AuthModule,
+    CompaniesModule,
   ],
   providers: [
     {

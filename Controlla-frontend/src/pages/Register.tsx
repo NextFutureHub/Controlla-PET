@@ -5,6 +5,7 @@ import { RegisterDto } from '../services/authService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import { toast } from 'react-hot-toast';
 
 enum UserRole {
   SUPER_ADMIN = 'super_admin',
@@ -52,17 +53,17 @@ const Register = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await register(formData);
-      // Если пользователь - Tenant Administrator, перенаправляем на форму компании
-      if (formData.role === UserRole.TENANT_ADMIN) {
+      const user = await register(formData);
+      if (user.role === UserRole.TENANT_ADMIN) {
         navigate('/company-registration');
       } else {
         navigate('/dashboard');
       }
-    } catch (error) {
-      console.error('Ошибка при регистрации:', error);
-    } finally {
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast.error(error.response?.data?.message || 'Ошибка при регистрации');
       setIsLoading(false);
+      return;
     }
   };
 

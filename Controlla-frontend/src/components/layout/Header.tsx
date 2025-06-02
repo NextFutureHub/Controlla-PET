@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Menu, X, Search } from 'lucide-react';
 import { useAuth, User } from '../../context/AuthContext';
+import { companyService } from '../../services/companyService';
 import Button from '../ui/Button';
 
 interface HeaderProps {
@@ -10,6 +11,22 @@ interface HeaderProps {
 const Header = ({ onToggleSidebar }: HeaderProps) => {
   const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [companyName, setCompanyName] = useState<string>('');
+  
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      if (user?.role === 'tenant_admin') {
+        try {
+          const companyData = await companyService.getCompany();
+          setCompanyName(companyData.name);
+        } catch (error) {
+          console.error('Error fetching company data:', error);
+        }
+      }
+    };
+    
+    fetchCompanyData();
+  }, [user]);
   
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
@@ -39,6 +56,12 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
       </div>
       
       <div className="flex items-center space-x-4">
+        {companyName && (
+          <div className="hidden md:block text-sm font-medium text-gray-700">
+            {companyName}
+          </div>
+        )}
+        
         <div className="relative">
           <button
             onClick={toggleNotifications}

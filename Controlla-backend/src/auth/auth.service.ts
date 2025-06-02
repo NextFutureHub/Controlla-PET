@@ -71,7 +71,20 @@ export class AuthService {
     await this.usersRepository.save(user);
 
     const { password, ...result } = user;
-    return result;
+
+    const payload = { 
+      sub: user.id, 
+      email: user.email,
+      role: user.role,
+      companyId: user.company?.id,
+      contractorId: user.contractor?.id
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      user: result
+    };
   }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto) {
