@@ -2,6 +2,9 @@ import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common'
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, RefreshTokenDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
+import { UserRole } from '../users/enums/user-role.enum';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('auth')
@@ -29,12 +32,24 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Post('register')
-  @ApiOperation({ summary: 'User registration' })
+  @Post('register/tenant')
+  @ApiOperation({ summary: 'Register new tenant and admin' })
   @ApiResponse({ status: 201, description: 'Registration successful' })
   @ApiResponse({ status: 400, description: 'Email already exists' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async registerTenant(@Body() registerDto: RegisterDto) {
+    return this.authService.registerTenant(registerDto);
+  }
+
+  @Post('register/user')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.TENANT_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Register new user (requires authentication)' })
+  @ApiResponse({ status: 201, description: 'Registration successful' })
+  @ApiResponse({ status: 400, description: 'Email already exists' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async registerUser(@Body() registerDto: RegisterDto, @Request() req) {
+    return this.authService.registerUser(registerDto, req.user);
   }
 
   @Post('refresh')
@@ -60,8 +75,7 @@ export class AuthController {
         firstName: { type: 'string' },
         lastName: { type: 'string' },
         role: { type: 'string' },
-        companyId: { type: 'string', nullable: true },
-        contractorId: { type: 'string', nullable: true }
+        tenantId: { type: 'string', nullable: true }
       }
     }
   })

@@ -27,7 +27,6 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Проверяем наличие всех обязательных полей
       if (!formData.name || !formData.description || !formData.dueDate || !formData.budget) {
         throw new Error('Please fill in all required fields');
       }

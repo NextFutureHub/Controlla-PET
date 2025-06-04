@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
 import { Project } from '../../projects/entities/project.entity';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 
 export enum ContractorRole {
   DEVELOPER = 'developer',
@@ -15,7 +16,7 @@ export enum ContractorStatus {
   OFFLINE = 'offline'
 }
 
-@Entity('contractor')
+@Entity('contractors')
 export class Contractor {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -29,28 +30,14 @@ export class Contractor {
   @Column({ unique: true })
   email: string;
 
-  @Column({
-    type: 'enum',
-    enum: ContractorRole,
-    default: ContractorRole.OTHER
-  })
-  role: ContractorRole;
-
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
-  hourlyRate: number;
+  @Column('simple-array')
+  skills: string[];
 
   @Column('decimal', { precision: 3, scale: 2, default: 0 })
   rating: number;
 
-  @Column({
-    type: 'enum',
-    enum: ContractorStatus,
-    default: ContractorStatus.ACTIVE
-  })
-  status: ContractorStatus;
-
-  @Column({ nullable: true })
-  location: string;
+  @ManyToOne(() => Tenant, tenant => tenant.contractors)
+  tenant: Tenant;
 
   @ManyToMany(() => Project, project => project.assignedContractors)
   @JoinTable({

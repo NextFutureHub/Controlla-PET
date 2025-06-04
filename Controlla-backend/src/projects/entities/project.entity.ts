@@ -1,14 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Contractor } from '../../contractors/entities/contractor.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from 'typeorm';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Task } from '../../tasks/entities/task.entity';
+import { Contractor } from '../../contractors/entities/contractor.entity';
+import { User } from '../../users/entities/user.entity';
 
 export enum ProjectStatus {
-  PLANNING = 'planning',
-  IN_PROGRESS = 'in-progress',
-  ON_HOLD = 'on-hold',
-  REVIEW = 'review',
+  ACTIVE = 'active',
   COMPLETED = 'completed',
-  CANCELLED = 'cancelled'
+  ARCHIVED = 'archived'
 }
 
 export enum ProjectPriority {
@@ -18,7 +17,7 @@ export enum ProjectPriority {
   URGENT = 'urgent'
 }
 
-@Entity('project')
+@Entity('projects')
 export class Project {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -26,13 +25,22 @@ export class Project {
   @Column()
   name: string;
 
-  @Column('text')
-  description: string;
+  @Column({ nullable: true })
+  description?: string;
+
+  @Column({ type: 'date', nullable: true })
+  startDate?: Date;
+
+  @Column({ type: 'date', nullable: true })
+  endDate?: Date;
+
+  @Column({ default: true })
+  isActive: boolean;
 
   @Column({
     type: 'enum',
     enum: ProjectStatus,
-    default: ProjectStatus.PLANNING
+    default: ProjectStatus.ACTIVE
   })
   status: ProjectStatus;
 
@@ -49,7 +57,13 @@ export class Project {
   @Column('decimal', { precision: 5, scale: 2, default: 0 })
   progress: number;
 
-  @ManyToMany(() => Contractor)
+  @ManyToOne(() => User)
+  manager: User;
+
+  @ManyToOne(() => Tenant, tenant => tenant.projects)
+  tenant: Tenant;
+
+  @ManyToMany(() => Contractor, contractor => contractor.projects)
   @JoinTable()
   assignedContractors: Contractor[];
 

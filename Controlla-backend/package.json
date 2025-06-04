@@ -22,7 +22,8 @@
     "migration:create": "npm run typeorm -- migration:create",
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/config/data-source.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/config/data-source.ts"
+    "migration:revert": "npm run typeorm -- migration:revert -d src/config/data-source.ts",
+    "create:super-admin": "psql -U postgres -p 5433 -d controlla_db -f src/scripts/create-super-admin.sql"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

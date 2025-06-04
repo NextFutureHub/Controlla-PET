@@ -18,8 +18,6 @@ export class ContractorsService {
     try {
       const contractor = this.contractorsRepository.create({
         ...createContractorDto,
-        rating: 0, // Начальный рейтинг
-        status: ContractorStatus.ACTIVE // Статус по умолчанию
       });
 
       return await this.contractorsRepository.save(contractor);
@@ -108,7 +106,6 @@ export class ContractorsService {
   async updateStatus(id: string, status: ContractorStatus): Promise<Contractor> {
     try {
       const contractor = await this.findOne(id);
-      contractor.status = status;
       return await this.contractorsRepository.save(contractor);
     } catch (error) {
       if (error instanceof NotFoundException) {

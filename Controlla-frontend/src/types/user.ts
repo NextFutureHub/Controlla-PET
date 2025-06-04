@@ -1,12 +1,8 @@
 export enum UserRole {
-  SUPER_ADMIN = 'super_admin',
-  TENANT_ADMIN = 'tenant_admin',
-  PROJECT_MANAGER = 'project_manager',
-  CONTRACTOR_COMPANY = 'contractor_company',
-  CONTRACTOR_EMPLOYEE = 'contractor_employee',
-  FINANCIAL_MANAGER = 'financial_manager',
-  CLIENT = 'client',
-  GUEST = 'guest'
+  OWNER = 'owner',
+  ADMIN = 'admin',
+  MANAGER = 'manager',
+  VIEWER = 'viewer'
 }
 
 export interface User {
@@ -15,10 +11,27 @@ export interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
-  companyId?: string;
-  contractorId?: string;
   isActive: boolean;
-  lastLoginAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  lastLoginAt?: string;
+  tenantId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserDto {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role?: UserRole;
+  tenantId?: string;
+}
+
+export interface UpdateUserDto {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: UserRole;
+  isActive?: boolean;
+  tenantId?: string;
 } 

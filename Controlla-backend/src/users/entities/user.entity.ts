@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Company } from '../../companies/entities/company.entity';
-import { Contractor } from '../../contractors/entities/contractor.entity';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 import { UserRole } from '../enums/user-role.enum';
 
 @Entity('users')
@@ -23,7 +22,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.GUEST
+    default: UserRole.USER
   })
   role: UserRole;
 
@@ -33,11 +32,8 @@ export class User {
   @Column({ nullable: true })
   lastLoginAt: Date;
 
-  @ManyToOne(() => Company, company => company.users)
-  company: Company;
-
-  @ManyToOne(() => Contractor)
-  contractor: Contractor;
+  @ManyToOne(() => Tenant, tenant => tenant.users, { nullable: true })
+  tenant: Tenant | null;
 
   @CreateDateColumn()
   createdAt: Date;

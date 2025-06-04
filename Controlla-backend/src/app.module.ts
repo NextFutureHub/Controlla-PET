@@ -1,14 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { TenantsModule } from './tenants/tenants.module';
+import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ContractorsModule } from './contractors/contractors.module';
-import { TasksModule } from './tasks/tasks.module';
-import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { CompaniesModule } from './companies/companies.module';
+import { TasksModule } from './tasks/tasks.module';
+import { Tenant } from './tenants/entities/tenant.entity';
+import { User } from './users/entities/user.entity';
+import { Project } from './projects/entities/project.entity';
+import { Contractor } from './contractors/entities/contractor.entity';
+import { Task } from './tasks/entities/task.entity';
+import { Subtask } from './tasks/entities/subtask.entity';
 
 @Module({
   imports: [
@@ -19,28 +23,23 @@ import { CompaniesModule } from './companies/companies.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
+        host: configService.get('DB_HOST', 'localhost'),
+        port: configService.get('DB_PORT', 5433),
+        username: configService.get('DB_USERNAME', 'postgres'),
+        password: configService.get('DB_PASSWORD', 'postgres'),
+        database: configService.get('DB_DATABASE', 'controlla_db'),
+        entities: [User, Tenant, Contractor, Project, Task, Subtask],
+        synchronize: configService.get('NODE_ENV') !== 'production',
+        logging: configService.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),
+    TenantsModule,
+    UsersModule,
     ProjectsModule,
     ContractorsModule,
-    TasksModule,
-    UsersModule,
     AuthModule,
-    CompaniesModule,
-  ],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: LoggingInterceptor,
-    },
+    TasksModule,
   ],
 })
 export class AppModule {}
