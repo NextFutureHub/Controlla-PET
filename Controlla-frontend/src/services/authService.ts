@@ -1,7 +1,31 @@
 import axios from 'axios';
 import { UserRole } from '../types/user';
+import { authService } from './authService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+// Axios interceptor для автоматического refresh
+axios.interceptors.response.use(
+  response => response,
+  async error => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refreshToken = authService.getRefreshToken();
+      if (refreshToken) {
+        try {
+          const { access_token, refresh_token } = await authService.refreshToken(refreshToken);
+          authService.setTokens(access_token, refresh_token);
+          originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
+          return axios(originalRequest);
+        } catch (e) {
+          authService.logout();
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface LoginDto {
   email: string;

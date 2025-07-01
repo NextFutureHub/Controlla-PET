@@ -17,6 +17,8 @@ import { Line } from 'react-chartjs-2';
 import { companyService } from '../services/companyService';
 import { useAuth } from '../context/AuthContext';
 
+import { UserRole } from '../types/user';
+
 // Register ChartJS components
 ChartJS.register(
   CategoryScale,
@@ -31,15 +33,14 @@ ChartJS.register(
 
 const Dashboard = () => {
   const [selectedTab, setSelectedTab] = useState('week');
-  const [companyName, setCompanyName] = useState('');
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   
   useEffect(() => {
     const fetchCompanyData = async () => {
-      if (user?.role === 'tenant_admin') {
+      if (user?.role === UserRole.TENANT_ADMIN) {
         try {
           const companyData = await companyService.getCompany();
-          setCompanyName(companyData.name);
+          // tenant?.name = companyData.name;
         } catch (error) {
           console.error('Error fetching company data:', error);
         }
@@ -191,8 +192,11 @@ const Dashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          {companyName && (
-            <p className="text-sm text-gray-500 mt-1">Company: {companyName}</p>
+          {tenant?.name && (
+            <p className="text-sm text-gray-500 mt-1">Компания: {tenant.name}</p>
+          )}
+          {user && (
+            <p className="text-sm text-gray-500 mt-1">Пользователь: {user.firstName} {user.lastName}</p>
           )}
         </div>
         <div className="mt-3 sm:mt-0">

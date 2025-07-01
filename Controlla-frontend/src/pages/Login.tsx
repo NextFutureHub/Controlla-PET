@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoginDto } from '../services/authService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -8,6 +8,7 @@ import Input from '../components/ui/Input';
 
 const Login = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginDto>({
     email: '',
     password: '',
@@ -26,7 +27,8 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await login(formData);
+      await login(formData.email, formData.password);
+      navigate('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
     } finally {

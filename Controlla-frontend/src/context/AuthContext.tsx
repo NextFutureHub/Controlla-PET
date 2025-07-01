@@ -53,10 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authService.setTokens(response.access_token, response.refresh_token);
       authService.setUser(response.user);
       setUser(response.user);
-      if (response.user.tenantId) {
-        const tenantData = await tenantService.findOne(response.user.tenantId);
-        setTenant(tenantData);
-      }
+      setTenant(response.tenant || null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
       throw err;
@@ -70,10 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authService.setTokens(response.access_token, response.refresh_token);
       authService.setUser(response.user);
       setUser(response.user);
-      if (response.user.tenantId) {
-        const tenantData = await tenantService.findOne(response.user.tenantId);
-        setTenant(tenantData);
-      }
+      setTenant(response.tenant || null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
       throw err;

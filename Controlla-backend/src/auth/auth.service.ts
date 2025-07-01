@@ -37,27 +37,33 @@ export class AuthService {
     return null;
   }
 
-  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
-    if (!user) {
+  async login(loginDto: LoginDto): Promise<AuthResponseDto & { tenant: any }> {
+    const userEntity = await this.usersRepository.findOne({
+      where: { email: loginDto.email },
+      relations: ['tenant'],
+    });
+    if (!userEntity || !(await bcrypt.compare(loginDto.password, userEntity.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    const user = this.toUserResponseDto(userEntity);
+    let tenant = userEntity.tenant ? await this.tenantsService.findOne(userEntity.tenant.id) : null;
 
     const payload = { 
       sub: user.id, 
       email: user.email,
       role: user.role,
-      tenantId: user.tenant?.id 
+      tenantId: user.tenantId 
     };
 
     return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
-      user
+      access_token: this.jwtService.sign(payload, { expiresIn: '14d' }),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '30d' }),
+      user,
+      tenant
     };
   }
 
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+  async register(registerDto: RegisterDto): Promise<AuthResponseDto & { tenant: any }> {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
       throw new ConflictException('Email already exists');
@@ -69,30 +75,40 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.usersService.create({
+    await this.usersService.create({
       ...registerDto,
       password: hashedPassword,
       tenant,
       role: registerDto.role || UserRole.USER
     });
 
+    // Получаем пользователя с relations: ['tenant']
+    const userEntity = await this.usersRepository.findOne({
+      where: { email: registerDto.email },
+      relations: ['tenant'],
+    });
+    if (!userEntity) {
+      throw new UnauthorizedException('User not found after registration');
+    }
+    const user = this.toUserResponseDto(userEntity);
+    let tenantObj = userEntity.tenant ? await this.tenantsService.findOne(userEntity.tenant.id) : null;
+
     const payload = { 
       sub: user.id, 
       email: user.email,
       role: user.role,
-      tenantId: user.tenant?.id 
+      tenantId: user.tenantId 
     };
 
-    const userResponse = this.toUserResponseDto(user);
-
     return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
-      user: userResponse
+      access_token: this.jwtService.sign(payload, { expiresIn: '14d' }),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '30d' }),
+      user,
+      tenant: tenantObj
     };
   }
 
-  async registerUser(registerDto: RegisterDto, currentUser: User) {
+  async registerUser(registerDto: RegisterDto, currentUser: User): Promise<AuthResponseDto & { tenant: any }> {
     // Проверяем права доступа
     if (currentUser.role !== UserRole.SUPER_ADMIN && 
         (currentUser.role !== UserRole.TENANT_ADMIN || currentUser.tenant?.id !== registerDto.tenantId)) {
@@ -114,30 +130,38 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    const user = this.usersRepository.create({
+    await this.usersRepository.save(this.usersRepository.create({
       ...registerDto,
       password: hashedPassword
+    }));
+
+    // Получаем пользователя с relations: ['tenant']
+    const userEntity = await this.usersRepository.findOne({
+      where: { email: registerDto.email },
+      relations: ['tenant'],
     });
-
-    await this.usersRepository.save(user);
-
-    const { password, ...result } = user;
+    if (!userEntity) {
+      throw new UnauthorizedException('User not found after registration');
+    }
+    const { password, ...result } = userEntity;
+    let tenant = userEntity.tenant ? await this.tenantsService.findOne(userEntity.tenant.id) : null;
 
     const payload = { 
-      sub: user.id, 
-      email: user.email,
-      role: user.role,
-      tenantId: user.tenant?.id
+      sub: userEntity.id, 
+      email: userEntity.email,
+      role: userEntity.role,
+      tenantId: userEntity.tenant?.id
     };
 
     return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
-      user: result
+      access_token: this.jwtService.sign(payload, { expiresIn: '14d' }),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '30d' }),
+      user: result,
+      tenant
     };
   }
 
-  async refreshToken(refreshTokenDto: RefreshTokenDto) {
+  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<{ access_token: string; refresh_token: string; tenant: any }> {
     try {
       const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
       const user = await this.usersRepository.findOne({ 
@@ -156,9 +180,12 @@ export class AuthService {
         tenantId: user.tenant?.id
       };
 
+      let tenant = user.tenant ? await this.tenantsService.findOne(user.tenant.id) : null;
+
       return {
-        access_token: this.jwtService.sign(newPayload),
-        refresh_token: this.jwtService.sign(newPayload, { expiresIn: '7d' })
+        access_token: this.jwtService.sign(newPayload, { expiresIn: '14d' }),
+        refresh_token: this.jwtService.sign(newPayload, { expiresIn: '30d' }),
+        tenant
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
