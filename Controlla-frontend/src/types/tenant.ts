@@ -7,6 +7,9 @@ export interface Tenant {
   name: string;
   industry?: string;
   description?: string;
+  website?: string;
+  phone?: string;
+  address?: string;
   logo?: string;
   isActive: boolean;
   settings?: Record<string, any>;
@@ -18,12 +21,23 @@ export interface Tenant {
   updatedAt: string;
 }
 
+export interface AdminUserDto {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface CreateTenantDto {
   name: string;
   industry?: string;
   description?: string;
+  website?: string;
+  phone?: string;
+  address?: string;
   logo?: string;
   settings?: Record<string, any>;
+  admin: AdminUserDto;
 }
 
 export interface UpdateTenantDto extends Partial<CreateTenantDto> {} 

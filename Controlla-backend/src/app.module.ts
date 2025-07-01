@@ -7,12 +7,16 @@ import { ProjectsModule } from './projects/projects.module';
 import { ContractorsModule } from './contractors/contractors.module';
 import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
+import { InvitesModule } from './invites/invites.module';
 import { Tenant } from './tenants/entities/tenant.entity';
 import { User } from './users/entities/user.entity';
+import { UserRole } from './users/entities/user-role.entity';
 import { Project } from './projects/entities/project.entity';
 import { Contractor } from './contractors/entities/contractor.entity';
 import { Task } from './tasks/entities/task.entity';
 import { Subtask } from './tasks/entities/subtask.entity';
+import { Invite } from './invites/entities/invite.entity';
+import { InviteAudit } from './invites/entities/invite-audit.entity';
 
 @Module({
   imports: [
@@ -28,7 +32,7 @@ import { Subtask } from './tasks/entities/subtask.entity';
         username: configService.get('DB_USERNAME', 'postgres'),
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_DATABASE', 'controlla_db'),
-        entities: [User, Tenant, Contractor, Project, Task, Subtask],
+        entities: [User, UserRole, Tenant, Contractor, Project, Task, Subtask, Invite, InviteAudit],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') !== 'production',
       }),
@@ -40,6 +44,7 @@ import { Subtask } from './tasks/entities/subtask.entity';
     ContractorsModule,
     AuthModule,
     TasksModule,
+    InvitesModule,
   ],
 })
 export class AppModule {}

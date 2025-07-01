@@ -3,9 +3,30 @@ import { Tenant, CreateTenantDto, UpdateTenantDto } from '../types/tenant';
 import { User } from '../types/user';
 import { UserRole } from '../types/user';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:3000/api';
+
+export interface TenantRegistrationResponse {
+  tenant: Tenant;
+  access_token: string;
+  refresh_token: string;
+  user: User;
+}
 
 export const tenantService = {
+  async register(data: CreateTenantDto): Promise<TenantRegistrationResponse> {
+    try {
+      const response = await apiService.post(`${API_URL}/tenants/register`, data);
+      console.log('Raw server response:', response);
+      if (!response) {
+        throw new Error('No response from server');
+      }
+      return response;
+    } catch (error) {
+      console.error('Tenant registration error:', error);
+      throw error;
+    }
+  },
+
   async create(data: CreateTenantDto): Promise<Tenant> {
     const response = await apiService.post(`${API_URL}/tenants`, data);
     return response.data;

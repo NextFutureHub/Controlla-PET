@@ -9,9 +9,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('users')
-@ApiBearerAuth()
-@Controller('api/users')
-@UseGuards(JwtAuthGuard)
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -29,10 +27,6 @@ export class UsersController {
     status: 200, 
     description: 'Return all users', 
     type: [UserResponseDto] 
-  })
-  @ApiResponse({ 
-    status: 401, 
-    description: 'Unauthorized - Requires valid JWT token' 
   })
   findAll(): Promise<UserResponseDto[]> {
     return this.usersService.findAll();

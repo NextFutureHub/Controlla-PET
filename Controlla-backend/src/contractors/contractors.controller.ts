@@ -9,7 +9,7 @@ import { multerConfig } from '../config/multer.config';
 import { PaginationDto } from './dto/pagination.dto';
 
 @ApiTags('contractors')
-@Controller('api/contractors')
+@Controller('contractors')
 export class ContractorsController {
   constructor(private readonly contractorsService: ContractorsService) {}
 

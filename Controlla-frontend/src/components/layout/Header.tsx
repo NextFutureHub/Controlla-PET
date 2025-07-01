@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell, Menu, X, Search } from 'lucide-react';
-import { useAuth, User } from '../../context/AuthContext';
+// import { useAuth, User } from '../../context/AuthContext';
 import { companyService } from '../../services/companyService';
 import Button from '../ui/Button';
 
@@ -9,24 +9,24 @@ interface HeaderProps {
 }
 
 const Header = ({ onToggleSidebar }: HeaderProps) => {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [companyName, setCompanyName] = useState<string>('');
   
-  useEffect(() => {
-    const fetchCompanyData = async () => {
-      if (user?.role === 'tenant_admin') {
-        try {
-          const companyData = await companyService.getCompany();
-          setCompanyName(companyData.name);
-        } catch (error) {
-          console.error('Error fetching company data:', error);
-        }
-      }
-    };
+  // useEffect(() => {
+  //   const fetchCompanyData = async () => {
+  //     if (user?.role === 'tenant_admin') {
+  //       try {
+  //         const companyData = await companyService.getCompany();
+  //         setCompanyName(companyData.name);
+  //       } catch (error) {
+  //         console.error('Error fetching company data:', error);
+  //       }
+  //     }
+  //   };
     
-    fetchCompanyData();
-  }, [user]);
+  //   fetchCompanyData();
+  // }, [user]);
   
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
@@ -114,7 +114,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
           )}
         </div>
         
-        <div className="flex items-center space-x-3">
+        {/* <div className="flex items-center space-x-3">
           {user?.avatar ? (
             <img
               src={user.avatar}
@@ -132,7 +132,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
               {user?.role?.replace('_', ' ')}
             </span>
           </div>
-        </div>
+        </div> */}
       </div>
     </header>
   );

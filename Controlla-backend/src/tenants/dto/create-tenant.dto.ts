@@ -1,5 +1,36 @@
-import { IsString, IsOptional, IsBoolean, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsObject, IsEmail, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class AdminUserDto {
+  @ApiProperty({
+    example: 'admin@acme.com',
+    description: 'Email of the tenant admin'
+  })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: 'password123',
+    description: 'Password for the tenant admin'
+  })
+  @IsString()
+  password: string;
+
+  @ApiProperty({
+    example: 'John',
+    description: 'First name of the tenant admin'
+  })
+  @IsString()
+  firstName: string;
+
+  @ApiProperty({
+    example: 'Doe',
+    description: 'Last name of the tenant admin'
+  })
+  @IsString()
+  lastName: string;
+}
 
 export class CreateTenantDto {
   @ApiProperty({
@@ -71,4 +102,34 @@ export class CreateTenantDto {
   @IsObject()
   @IsOptional()
   settings?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Admin user data for the tenant',
+    type: AdminUserDto
+  })
+  @ValidateNested()
+  @Type(() => AdminUserDto)
+  admin: AdminUserDto;
+}
+
+export class TenantRegistrationResponseDto {
+  @ApiProperty({
+    description: 'The created tenant'
+  })
+  tenant: any;
+
+  @ApiProperty({
+    description: 'Access token for the admin user'
+  })
+  access_token: string;
+
+  @ApiProperty({
+    description: 'Refresh token for the admin user'
+  })
+  refresh_token: string;
+
+  @ApiProperty({
+    description: 'The admin user data'
+  })
+  user: any;
 } 

@@ -6,7 +6,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { PaginationDto } from './dto/pagination.dto';
 
 @ApiTags('projects')
-@Controller('api/projects')
+@Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 

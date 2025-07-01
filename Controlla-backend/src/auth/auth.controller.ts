@@ -8,12 +8,12 @@ import { UserRole } from '../users/enums/user-role.enum';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('auth')
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  @ApiOperation({ summary: 'User login' })
+  @ApiOperation({ summary: 'Login user' })
   @ApiBody({
     type: LoginDto,
     description: 'User credentials',
@@ -32,12 +32,12 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Post('register/tenant')
-  @ApiOperation({ summary: 'Register new tenant and admin' })
+  @Post('register')
+  @ApiOperation({ summary: 'Register new user (public endpoint)' })
   @ApiResponse({ status: 201, description: 'Registration successful' })
   @ApiResponse({ status: 400, description: 'Email already exists' })
-  async registerTenant(@Body() registerDto: RegisterDto) {
-    return this.authService.registerTenant(registerDto);
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 
   @Post('register/user')
@@ -60,9 +60,7 @@ export class AuthController {
     return this.authService.refreshToken(refreshTokenDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('profile')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ 
     status: 200, 
@@ -78,10 +76,6 @@ export class AuthController {
         tenantId: { type: 'string', nullable: true }
       }
     }
-  })
-  @ApiResponse({ 
-    status: 401, 
-    description: 'Unauthorized - Requires valid JWT token' 
   })
   getProfile(@Request() req) {
     return req.user;

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -52,6 +52,7 @@ export class AuthService {
 
     return {
       access_token: this.jwtService.sign(payload),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
       user
     };
   }
@@ -59,7 +60,7 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
-      throw new UnauthorizedException('Email already exists');
+      throw new ConflictException('Email already exists');
     }
 
     let tenant: Tenant | null = null;
@@ -72,7 +73,7 @@ export class AuthService {
       ...registerDto,
       password: hashedPassword,
       tenant,
-      role: UserRole.USER
+      role: registerDto.role || UserRole.USER
     });
 
     const payload = { 
@@ -86,55 +87,8 @@ export class AuthService {
 
     return {
       access_token: this.jwtService.sign(payload),
-      user: userResponse
-    };
-  }
-
-  async registerTenant(registerDto: RegisterDto) {
-    const existingUser = await this.usersRepository.findOne({ 
-      where: { email: registerDto.email } 
-    });
-
-    if (existingUser) {
-      throw new BadRequestException('Email already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-
-    // Создаем пользователя с ролью TENANT_ADMIN
-    const user = this.usersRepository.create({
-      email: registerDto.email,
-      password: hashedPassword,
-      firstName: registerDto.firstName,
-      lastName: registerDto.lastName,
-      role: UserRole.TENANT_ADMIN
-    });
-
-    if (!registerDto.tenantId) {
-      throw new BadRequestException('tenantId is required for tenant registration');
-    }
-
-    // Создаем тенанта и связываем с пользователем
-    const tenant = await this.tenantsService.create({
-      name: registerDto.tenantId,
-    }, user);
-
-    const { password, ...result } = user;
-
-    const payload = { 
-      sub: user.id, 
-      email: user.email,
-      role: user.role,
-      tenantId: tenant.id
-    };
-
-    return {
-      access_token: this.jwtService.sign(payload),
       refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
-      user: {
-        ...result,
-        tenantId: tenant.id
-      }
+      user: userResponse
     };
   }
 

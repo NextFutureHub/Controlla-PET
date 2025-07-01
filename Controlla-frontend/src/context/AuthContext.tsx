@@ -26,9 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = authService.getAccessToken();
         if (token) {
-          const userData = await authService.getCurrentUser();
+          const userData = await authService.getProfile();
           setUser(userData);
           if (userData.tenantId) {
             const tenantData = await tenantService.findOne(userData.tenantId);
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
-        localStorage.removeItem('token');
+        authService.logout();
       } finally {
         setLoading(false);
       }
@@ -49,11 +49,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       setError(null);
-      const { token, user: userData } = await authService.login(email, password);
-      localStorage.setItem('token', token);
-      setUser(userData);
-      if (userData.tenantId) {
-        const tenantData = await tenantService.findOne(userData.tenantId);
+      const response = await authService.login({ email, password });
+      authService.setTokens(response.access_token, response.refresh_token);
+      authService.setUser(response.user);
+      setUser(response.user);
+      if (response.user.tenantId) {
+        const tenantData = await tenantService.findOne(response.user.tenantId);
         setTenant(tenantData);
       }
     } catch (err: any) {
@@ -65,11 +66,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: any) => {
     try {
       setError(null);
-      const { token, user: newUser } = await authService.register(userData);
-      localStorage.setItem('token', token);
-      setUser(newUser);
-      if (newUser.tenantId) {
-        const tenantData = await tenantService.findOne(newUser.tenantId);
+      const response = await authService.register(userData);
+      authService.setTokens(response.access_token, response.refresh_token);
+      authService.setUser(response.user);
+      setUser(response.user);
+      if (response.user.tenantId) {
+        const tenantData = await tenantService.findOne(response.user.tenantId);
         setTenant(tenantData);
       }
     } catch (err: any) {
@@ -79,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    authService.logout();
     setUser(null);
     setTenant(null);
   };
@@ -87,7 +89,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = async (data: Partial<User>) => {
     try {
       setError(null);
-      const updatedUser = await authService.updateUser(data);
+      const updatedUser = await authService.getProfile();
+      authService.setUser(updatedUser);
       setUser(updatedUser);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Update failed');

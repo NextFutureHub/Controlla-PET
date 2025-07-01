@@ -2,7 +2,7 @@ import { apiService } from './apiService';
 import { ContractorStatus, ContractorRole } from '../types/contractor';
 import { Project } from './projectsService';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:3000/api';
 
 export interface Contractor {
   id: string;

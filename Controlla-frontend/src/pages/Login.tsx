@@ -35,11 +35,19 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute top-4 right-4">
+        <Link
+          to="/tenant-registration"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+        >
+          Зарегистрировать компанию
+        </Link>
+      </div>
       <Card className="max-w-md w-full space-y-8">
         <CardHeader>
           <CardTitle className="text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            Вход в систему
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -83,7 +91,7 @@ const Login = () => {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? 'Вход...' : 'Войти'}
               </Button>
             </div>
 
@@ -92,7 +100,7 @@ const Login = () => {
                 to="/register"
                 className="font-medium text-primary-600 hover:text-primary-500"
               >
-                Don't have an account? Sign up
+                Нет аккаунта? Зарегистрироваться
               </Link>
             </div>
           </form>
