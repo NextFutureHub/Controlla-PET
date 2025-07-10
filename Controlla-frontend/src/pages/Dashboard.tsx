@@ -16,6 +16,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { companyService } from '../services/companyService';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 import { UserRole } from '../types/user';
 
@@ -34,6 +35,7 @@ ChartJS.register(
 const Dashboard = () => {
   const [selectedTab, setSelectedTab] = useState('week');
   const { user, tenant } = useAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -199,7 +201,14 @@ const Dashboard = () => {
             <p className="text-sm text-gray-500 mt-1">Пользователь: {user.firstName} {user.lastName}</p>
           )}
         </div>
-        <div className="mt-3 sm:mt-0">
+        <div className="mt-3 sm:mt-0 flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/tenant-settings')}
+          >
+            Tenant Settings
+          </Button>
           <Button variant="primary" size="sm" rightIcon={<ArrowUpRight size={16} />}>
             Generate Report
           </Button>

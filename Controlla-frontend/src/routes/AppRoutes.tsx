@@ -8,7 +8,12 @@ import Projects from '../pages/Projects';
 import ProjectDetails from '../pages/ProjectDetails';
 import TimeTracking from '../pages/TimeTracking';
 import Finance from '../pages/Finance';
-// import Login from '../pages/Login';
+import TenantSettings from '../pages/TenantSettings';
+import Reports from '../pages/Reports';
+import Messages from '../pages/Messages';
+import Login from '../pages/Login';
+import Register from '../pages/Register';
+import { TenantRegistration } from '../pages/TenantRegistration';
 import NotFound from '../pages/NotFound';
 
 type ProtectedRouteProps = {
@@ -16,9 +21,17 @@ type ProtectedRouteProps = {
 };
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAuthenticated } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (!isAuthenticated) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
@@ -26,11 +39,21 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
-      {/* <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} /> */}
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/tenant-registration" element={<TenantRegistration />} />
       
       <Route
         path="/"
@@ -48,6 +71,9 @@ const AppRoutes = () => {
         <Route path="projects/:id" element={<ProjectDetails />} />
         <Route path="time-tracking" element={<TimeTracking />} />
         <Route path="finance" element={<Finance />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="messages" element={<Messages />} />
+        <Route path="tenant-settings" element={<TenantSettings />} />
       </Route>
       
       <Route path="*" element={<NotFound />} />

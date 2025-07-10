@@ -13,6 +13,7 @@ interface AuthContextType {
   register: (userData: any) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => Promise<void>;
+  updateTenant: (data: Partial<Tenant>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,11 +29,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const token = authService.getAccessToken();
         if (token) {
-          const userData = await authService.getProfile();
-          setUser(userData);
-          if (userData.tenantId) {
-            const tenantData = await tenantService.findOne(userData.tenantId);
-            setTenant(tenantData);
+          try {
+            const userData = await authService.getProfile();
+            setUser(userData);
+            if (userData.tenantId) {
+              try {
+                const tenantData = await tenantService.findOne(userData.tenantId);
+                setTenant(tenantData);
+              } catch (tenantErr) {
+                console.error('Error loading tenant:', tenantErr);
+              }
+            }
+          } catch (profileErr) {
+            console.error('Error loading profile:', profileErr);
+            authService.logout();
           }
         }
       } catch (err) {
@@ -92,8 +102,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateTenant = (data: Partial<Tenant>) => {
+    setTenant((prev) => (prev ? { ...prev, ...data } : prev));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, tenant, loading, error, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, tenant, loading, error, login, register, logout, updateUser, updateTenant }}>
       {children}
     </AuthContext.Provider>
   );
