@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { UserRole } from '../types/user';
-import { authService } from './authService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -11,15 +10,19 @@ axios.interceptors.response.use(
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = authService.getRefreshToken();
+      const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const { access_token, refresh_token } = await authService.refreshToken(refreshToken);
-          authService.setTokens(access_token, refresh_token);
+          const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
+          const { access_token, refresh_token } = response.data;
+          localStorage.setItem('access_token', access_token);
+          localStorage.setItem('refresh_token', refresh_token);
           originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
           return axios(originalRequest);
         } catch (e) {
-          authService.logout();
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
         }
       }
     }

@@ -64,7 +64,17 @@ export class Project {
   tenant: Tenant;
 
   @ManyToMany(() => Contractor, contractor => contractor.projects)
-  @JoinTable()
+  @JoinTable({
+    name: 'contractor_projects',
+    joinColumn: {
+      name: 'project_id',
+      referencedColumnName: 'id'
+    },
+    inverseJoinColumn: {
+      name: 'contractor_id',
+      referencedColumnName: 'id'
+    }
+  })
   assignedContractors: Contractor[];
 
   @OneToMany(() => Task, task => task.project)
