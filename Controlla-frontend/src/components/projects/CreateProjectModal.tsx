@@ -16,7 +16,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
   const [formData, setFormData] = useState<CreateProjectDto>({
     name: '',
     description: '',
-    status: 'planning',
+    status: 'active',
     priority: 'medium',
     dueDate: '',
     totalHours: 0,
@@ -67,12 +67,9 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as ProjectStatus })}
               options={[
-                { value: 'planning', label: 'Planning' },
-                { value: 'in-progress', label: 'In Progress' },
-                { value: 'on-hold', label: 'On Hold' },
-                { value: 'review', label: 'Review' },
+                { value: 'active', label: 'Active' },
                 { value: 'completed', label: 'Completed' },
-                { value: 'cancelled', label: 'Cancelled' }
+                { value: 'archived', label: 'Archived' }
               ]}
             />
 

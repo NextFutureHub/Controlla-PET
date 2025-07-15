@@ -26,6 +26,7 @@ interface CreateTaskFormData {
 interface ProjectWithDates extends Project {
   startDate: string;
   endDate?: string;
+  spent?: number;
 }
 
 const ProjectDetails = () => {
@@ -223,9 +224,73 @@ const ProjectDetails = () => {
               <h3 className="text-lg font-semibold">Description</h3>
               <p className="text-gray-600">{project?.description}</p>
             </div>
+            <div className="flex flex-wrap gap-8 items-center">
+              <div>
+                <h3 className="text-lg font-semibold">Status</h3>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                  {project?.status}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Progress</h3>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{project?.progress ?? 0}%</span>
+                  <div className="w-40 bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${
+                        (project?.progress || 0) >= 70 ? 'bg-green-500' :
+                        (project?.progress || 0) >= 50 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${Math.min(Math.max(project?.progress || 0, 0), 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Budget</h3>
+                <span className="text-gray-700 font-medium">{formatCurrency(project?.budget ?? 0)}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Spent</h3>
+                <span className="text-gray-700 font-medium">{formatCurrency(project?.spent ?? 0)}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Total Hours</h3>
+                <span className="text-gray-700 font-medium">{project?.totalHours ?? 0}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Due Date</h3>
+                <span className="text-gray-700 font-medium">{project?.dueDate ? formatDate(project.dueDate) : 'Not set'}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Created</h3>
+                <span className="text-gray-700 font-medium">{project?.createdAt ? formatDate(project.createdAt) : 'Not set'}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Updated</h3>
+                <span className="text-gray-700 font-medium">{project?.updatedAt ? formatDate(project.updatedAt) : 'Not set'}</span>
+              </div>
+            </div>
             <div>
-              <h3 className="text-lg font-semibold">Status</h3>
-              <p className="text-gray-600">{project?.status}</p>
+              <h3 className="text-lg font-semibold mb-2">Participants</h3>
+              <div className="flex flex-wrap gap-4 items-center">
+                {(project?.assignedContractors || []).length === 0 && (
+                  <span className="text-gray-500">No contractors assigned</span>
+                )}
+                {(project?.assignedContractors || []).map(contractor => (
+                  <div key={contractor.id} className="flex flex-col items-center">
+                    <img
+                      src={contractor.avatar}
+                      alt={contractor.name}
+                      className="w-12 h-12 rounded-full border-2 border-white shadow"
+                      title={contractor.name}
+                    />
+                    <span className="text-xs font-medium mt-1">{contractor.name}</span>
+                    <span className="text-xs text-gray-500">{contractor.role}</span>
+                  </div>
+                ))}
+              </div>
             </div>
             <div>
               <h3 className="text-lg font-semibold">Start Date</h3>

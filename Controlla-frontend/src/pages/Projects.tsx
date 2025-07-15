@@ -37,7 +37,7 @@ const Projects = () => {
   const fetchProjects = async () => {
     try {
       const response = await projectsService.getAll(currentPage);
-      setProjects(response.data || []);
+      setProjects(response.projects || []);
       setTotalPages(response.totalPages);
       setError(null);
     } catch (err) {
@@ -65,18 +65,12 @@ const Projects = () => {
   
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
-      case 'in-progress':
+      case 'active':
         return 'bg-blue-100 text-blue-800';
-      case 'planning':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'on-hold':
-        return 'bg-purple-100 text-purple-800';
-      case 'review':
-        return 'bg-orange-100 text-orange-800';
       case 'completed':
         return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -276,7 +270,7 @@ const Projects = () => {
                   leftIcon={<Filter size={16} />}
                   onClick={() => setIsStatusMenuOpen(!isStatusMenuOpen)}
                 >
-                  Status: {statusFilter === 'all' ? 'All' : statusFilter}
+                  Status: {statusFilter === 'all' ? 'All' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
                 </Button>
                 {isStatusMenuOpen && (
                   <div className="absolute z-10 mt-1 right-0 w-40 bg-white rounded-md shadow-lg border border-gray-200">
@@ -292,39 +286,12 @@ const Projects = () => {
                       </button>
                       <button
                         onClick={() => {
-                          setStatusFilter('planning');
+                          setStatusFilter('active');
                           setIsStatusMenuOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        Planning
-                      </button>
-                      <button
-                        onClick={() => {
-                          setStatusFilter('in-progress');
-                          setIsStatusMenuOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        In Progress
-                      </button>
-                      <button
-                        onClick={() => {
-                          setStatusFilter('on-hold');
-                          setIsStatusMenuOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        On Hold
-                      </button>
-                      <button
-                        onClick={() => {
-                          setStatusFilter('review');
-                          setIsStatusMenuOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Review
+                        Active
                       </button>
                       <button
                         onClick={() => {
@@ -337,12 +304,12 @@ const Projects = () => {
                       </button>
                       <button
                         onClick={() => {
-                          setStatusFilter('cancelled');
+                          setStatusFilter('archived');
                           setIsStatusMenuOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        Cancelled
+                        Archived
                       </button>
                     </div>
                   </div>

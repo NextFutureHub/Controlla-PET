@@ -32,7 +32,7 @@ export class User {
   @Column({ nullable: true })
   lastLoginAt: Date;
 
-  @ManyToOne(() => Tenant, tenant => tenant.users, { nullable: true })
+  @ManyToOne(() => Tenant, tenant => tenant.users, { nullable: true, onDelete: 'CASCADE' })
   tenant: Tenant | null;
 
   @CreateDateColumn()
