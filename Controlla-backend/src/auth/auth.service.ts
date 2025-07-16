@@ -52,7 +52,7 @@ export class AuthService {
       sub: user.id, 
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId 
+      tenantId: user.tenant?.id 
     };
 
     return {

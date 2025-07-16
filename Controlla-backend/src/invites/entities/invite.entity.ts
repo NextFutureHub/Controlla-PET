@@ -1,46 +1,30 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
-import { UserRole as UserRoleEnum } from '../../users/enums/user-role.enum';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('invites')
 export class Invite {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  email: string;
-
-  @Column()
-  tenantId: string;
-
-  @Column({
-    type: 'enum',
-    enum: UserRoleEnum
-  })
-  role: UserRoleEnum;
-
-  @Column({ unique: true })
+  @Column({ length: 12, unique: true })
   code: string;
 
-  @Column()
-  expiresAt: Date;
+  @ManyToOne(() => Tenant, { nullable: false, onDelete: 'CASCADE' })
+  tenant: Tenant;
+
+  @Column({ nullable: true })
+  role: string;
 
   @Column({ default: false })
-  accepted: boolean;
+  isUsed: boolean;
 
-  @Column({ nullable: true })
-  acceptedBy?: string; // userId who accepted the invite
-
-  @Column({ nullable: true })
-  acceptedAt?: Date;
-
-  @ManyToOne(() => Tenant, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'tenantId' })
-  tenant: Tenant;
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  usedBy: User | null;
 
   @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  expiresAt: Date | null;
 } 
