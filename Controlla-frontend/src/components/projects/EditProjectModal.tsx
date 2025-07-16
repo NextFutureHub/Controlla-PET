@@ -1,30 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { ProjectStatus, ProjectPriority, CreateProjectDto } from '../../services/projectsService';
-import { useAuth } from '../../context/AuthContext';
+import { ProjectStatus, ProjectPriority, UpdateProjectDto, Project } from '../../services/projectsService';
 
-interface CreateProjectModalProps {
+interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateProjectDto) => Promise<void>;
+  onSubmit: (data: UpdateProjectDto) => Promise<void>;
+  initialData: Project;
 }
 
-export default function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectModalProps) {
-  const { tenant } = useAuth();
-  const [formData, setFormData] = useState<CreateProjectDto>({
-    name: '',
-    description: '',
-    status: 'active',
+export default function EditProjectModal({ isOpen, onClose, onSubmit, initialData }: EditProjectModalProps) {
+  const mapInitialData = (data: Project): UpdateProjectDto => ({
+    name: data.name,
+    description: data.description,
+    status: data.status as ProjectStatus,
     priority: 'medium',
-    dueDate: '',
-    totalHours: 0,
-    budget: 0,
-    assignedContractors: []
+    dueDate: data.dueDate,
+    budget: data.budget,
+    assignedContractors: data.assignedContractors?.map(c => c.id),
   });
+
+  const [formData, setFormData] = useState<UpdateProjectDto>(mapInitialData(initialData));
+
+  useEffect(() => {
+    setFormData(mapInitialData(initialData));
+  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,14 +36,22 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
       if (!formData.name || !formData.description || !formData.dueDate || !formData.budget) {
         throw new Error('Please fill in all required fields');
       }
-      if (!tenant?.id) {
-        throw new Error('Tenant not found');
-      }
-      await onSubmit({ ...formData, tenantId: tenant.id });
+      // Преобразуем dueDate в ISO-строку (YYYY-MM-DD)
+      const submitData = {
+        name: formData.name,
+        description: formData.description,
+        dueDate: formData.dueDate ? formData.dueDate.slice(0, 10) : undefined,
+        budget: Number(formData.budget),
+        status: formData.status,
+        priority: formData.priority,
+        assignedContractors: formData.assignedContractors,
+      };
+      console.log('PATCH payload', submitData);
+      await onSubmit(submitData);
       onClose();
     } catch (error) {
-      console.error('Error creating project:', error);
-      // TODO: Добавить отображение ошибки пользователю
+      console.error('Error updating project:', error);
+      // TODO: вывести ошибку для пользователя
     }
   };
 
@@ -47,20 +59,20 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Project"
+      title="Edit Project"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <Input
             label="Project Name"
-            value={formData.name}
+            value={formData.name || ''}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
           />
 
           <Textarea
             label="Description"
-            value={formData.description}
+            value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
           />
@@ -68,7 +80,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="Status"
-              value={formData.status}
+              value={formData.status || 'active'}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as ProjectStatus })}
               options={[
                 { value: 'active', label: 'Active' },
@@ -79,7 +91,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
 
             <Select
               label="Priority"
-              value={formData.priority}
+              value={formData.priority || 'medium'}
               onChange={(e) => setFormData({ ...formData, priority: e.target.value as ProjectPriority })}
               options={[
                 { value: 'low', label: 'Low' },
@@ -94,7 +106,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
             <Input
               type="date"
               label="Due Date"
-              value={formData.dueDate}
+              value={formData.dueDate ? formData.dueDate.slice(0, 10) : ''}
               onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
               required
             />
@@ -102,7 +114,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
             <Input
               type="number"
               label="Budget"
-              value={formData.budget}
+              value={formData.budget ?? 0}
               onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
               required
               min="0"
@@ -124,7 +136,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
             variant="primary"
             disabled={!formData.name || !formData.description || !formData.dueDate}
           >
-            Create Project
+            Save Changes
           </Button>
         </div>
       </form>

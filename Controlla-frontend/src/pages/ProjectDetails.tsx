@@ -8,12 +8,13 @@ import Button from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Plus, Clock, Users, Calendar, AlertCircle, MoreHorizontal, Trash2, X } from 'lucide-react';
-import { projectsService, Project } from '../services/projectsService';
+import { projectsService, Project, UpdateProjectDto } from '../services/projectsService';
 import { tasksService, Task } from '../services/tasksService';
 import { getProjectStatusInfo } from '../utils/projectStatus';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { contractorsService, Contractor } from '../services/contractorsService';
 import { toast } from 'react-hot-toast';
+import EditProjectModal from '../components/projects/EditProjectModal';
 
 interface CreateTaskFormData {
   name: string;
@@ -44,6 +45,7 @@ const ProjectDetails = () => {
   });
   const [showAddContractorsModal, setShowAddContractorsModal] = useState(false);
   const [selectedContractors, setSelectedContractors] = useState<string[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Получение данных проекта с использованием React Query
   const { data: project, isLoading: isLoadingProject } = useQuery<ProjectWithDates>({
@@ -188,6 +190,23 @@ const ProjectDetails = () => {
     },
   });
 
+  const handleEditProject = async (data: UpdateProjectDto) => {
+    try {
+      // Преобразуем assignedContractors в массив id, если есть
+      let updateData: any = { ...data };
+      if (Array.isArray(data.assignedContractors)) {
+        updateData.assignedContractors = data.assignedContractors.map((c: any) => c.id ? c.id : c);
+      }
+      await projectsService.update(id!, updateData);
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      setShowEditModal(false);
+      toast.success('Project updated successfully');
+    } catch (error) {
+      toast.error('Failed to update project');
+      console.error('Error updating project:', error);
+    }
+  };
+
   if (isLoadingProject) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -213,26 +232,39 @@ const ProjectDetails = () => {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <Card>
+    <div className="container mx-auto py-8">
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle>{project?.name}</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-6 h-6 text-blue-500" />
+              <CardTitle>{project?.name}</CardTitle>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowEditModal(true)}>Edit Project</Button>
+              <Button variant="danger" onClick={handleDelete}>Delete Project</Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-            <div>
-              <h3 className="text-lg font-semibold">Description</h3>
-              <p className="text-gray-600">{project?.description}</p>
-            </div>
-            <div className="flex flex-wrap gap-8 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold">Status</h3>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                  {project?.status}
-                </span>
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-1">
+                  <AlertCircle className="w-5 h-5 text-yellow-500" /> Description
+                </h3>
+                <p className="text-gray-600">{project?.description}</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Progress</h3>
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-1">
+                  <Clock className="w-5 h-5 text-purple-500" /> Status
+                </h3>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>{project?.status}</span>
+              </div>
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-1">
+                  <Plus className="w-5 h-5 text-green-500" /> Progress
+                </h3>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{project?.progress ?? 0}%</span>
                   <div className="w-40 bg-gray-200 rounded-full h-2">
@@ -248,65 +280,140 @@ const ProjectDetails = () => {
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Budget</h3>
-                <span className="text-gray-700 font-medium">{formatCurrency(project?.budget ?? 0)}</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Spent</h3>
-                <span className="text-gray-700 font-medium">{formatCurrency(project?.spent ?? 0)}</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Total Hours</h3>
-                <span className="text-gray-700 font-medium">{project?.totalHours ?? 0}</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Due Date</h3>
-                <span className="text-gray-700 font-medium">{project?.dueDate ? formatDate(project.dueDate) : 'Not set'}</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Created</h3>
-                <span className="text-gray-700 font-medium">{project?.createdAt ? formatDate(project.createdAt) : 'Not set'}</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Updated</h3>
-                <span className="text-gray-700 font-medium">{project?.updatedAt ? formatDate(project.updatedAt) : 'Not set'}</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Participants</h3>
-              <div className="flex flex-wrap gap-4 items-center">
-                {(project?.assignedContractors || []).length === 0 && (
-                  <span className="text-gray-500">No contractors assigned</span>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold">
+                    <Users className="w-5 h-5 text-blue-500" /> Participants
+                  </h3>
+                  <Button size="sm" variant="primary" onClick={() => setShowAddContractorsModal(true)}>
+                    Add Participant
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {(project?.assignedContractors || []).length === 0 && (
+                    <Card className="flex items-center justify-center">
+                      <span className="text-gray-500">No contractors assigned</span>
+                    </Card>
+                  )}
+                  {(project?.assignedContractors || []).map(contractor => (
+                    <Card key={contractor.id} hoverable className="flex flex-col items-center p-4">
+                      <img
+                        src={contractor.avatar}
+                        alt={contractor.name}
+                        className="w-16 h-16 rounded-full border-2 border-white shadow mb-2"
+                        title={contractor.name}
+                      />
+                      <span className="text-base font-medium">{contractor.name}</span>
+                      <span className="text-xs text-gray-500">{contractor.role}</span>
+                      {/* <Button size="sm" variant="danger" onClick={() => handleRemoveContractor(contractor.id)} className="mt-2">Remove</Button> */}
+                    </Card>
+                  ))}
+                </div>
+                {/* Модальное окно для добавления участников */}
+                {showAddContractorsModal && (
+                  <Modal isOpen={showAddContractorsModal} onClose={() => setShowAddContractorsModal(false)} title="Add Participants">
+                    <div className="mb-4">
+                      <h4 className="font-semibold mb-2">Select contractors to add:</h4>
+                      <div className="max-h-64 overflow-y-auto space-y-2">
+                        {contractors.contractors.map((contractor: any) => {
+                          const alreadyAssigned = (project?.assignedContractors || []).some((c: any) => c.id === contractor.id);
+                          return (
+                            <label key={contractor.id} className={`flex items-center gap-3 p-2 rounded cursor-pointer ${alreadyAssigned ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}>
+                              <input
+                                type="checkbox"
+                                disabled={alreadyAssigned}
+                                checked={selectedContractors.includes(contractor.id) || alreadyAssigned}
+                                onChange={e => {
+                                  if (alreadyAssigned) return;
+                                  if (e.target.checked) {
+                                    setSelectedContractors(prev => [...prev, contractor.id]);
+                                  } else {
+                                    setSelectedContractors(prev => prev.filter(id => id !== contractor.id));
+                                  }
+                                }}
+                              />
+                              <img src={contractor.avatar} alt={contractor.name} className="w-8 h-8 rounded-full border" />
+                              <span className="font-medium">{contractor.name}</span>
+                              <span className="text-xs text-gray-500">{contractor.role}</span>
+                              {alreadyAssigned && <span className="ml-auto text-xs text-green-500">Already in project</span>}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowAddContractorsModal(false)}>Cancel</Button>
+                      <Button
+                        variant="primary"
+                        onClick={handleAddContractors}
+                        disabled={selectedContractors.length === 0}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </Modal>
                 )}
-                {(project?.assignedContractors || []).map(contractor => (
-                  <div key={contractor.id} className="flex flex-col items-center">
-                    <img
-                      src={contractor.avatar}
-                      alt={contractor.name}
-                      className="w-12 h-12 rounded-full border-2 border-white shadow"
-                      title={contractor.name}
-                    />
-                    <span className="text-xs font-medium mt-1">{contractor.name}</span>
-                    <span className="text-xs text-gray-500">{contractor.role}</span>
-                  </div>
-                ))}
               </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold">Start Date</h3>
-              <p className="text-gray-600">{project?.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">End Date</h3>
-              <p className="text-gray-600">{project?.endDate ? new Date(project.endDate).toLocaleDateString() : 'Not set'}</p>
-            </div>
-            <div className="flex gap-4">
-              <Button variant="outline">Edit Project</Button>
-              <Button variant="danger" onClick={handleDelete}>Delete Project</Button>
+            <div className="space-y-4">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-1">
+                  <Calendar className="w-5 h-5 text-blue-400" /> Dates
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="block text-xs text-gray-500">Start Date</span>
+                    <span className="text-gray-700 font-medium">{project?.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500">End Date</span>
+                    <span className="text-gray-700 font-medium">{project?.endDate ? new Date(project.endDate).toLocaleDateString() : 'Not set'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500">Due Date</span>
+                    <span className="text-gray-700 font-medium">{project?.dueDate ? formatDate(project.dueDate) : 'Not set'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500">Created</span>
+                    <span className="text-gray-700 font-medium">{project?.createdAt ? formatDate(project.createdAt) : 'Not set'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500">Updated</span>
+                    <span className="text-gray-700 font-medium">{project?.updatedAt ? formatDate(project.updatedAt) : 'Not set'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="flex items-center gap-2 text-lg font-semibold mb-1">
+                    <span className="inline-block w-3 h-3 rounded-full bg-green-500" /> Budget
+                  </h3>
+                  <span className="text-gray-700 font-medium">{formatCurrency(project?.budget ?? 0)}</span>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-lg font-semibold mb-1">
+                    <span className="inline-block w-3 h-3 rounded-full bg-red-500" /> Spent
+                  </h3>
+                  <span className="text-gray-700 font-medium">{formatCurrency(project?.spent ?? 0)}</span>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-lg font-semibold mb-1">
+                    <Clock className="w-4 h-4 text-purple-400" /> Total Hours
+                  </h3>
+                  <span className="text-gray-700 font-medium">{project?.totalHours ?? 0}</span>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+      {showEditModal && project && (
+        <EditProjectModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleEditProject}
+          initialData={project}
+        />
+      )}
     </div>
   );
 };

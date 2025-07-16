@@ -6,6 +6,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ContractorsService } from '../contractors/contractors.service';
 import { Contractor } from '../contractors/entities/contractor.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 
 @Injectable()
 export class ProjectsService {
@@ -42,10 +43,15 @@ export class ProjectsService {
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
     try {
-      const { assignedContractors, ...projectData } = createProjectDto;
-      
+      const { assignedContractors, tenantId, ...projectData } = createProjectDto;
+      // Найти тенанта по tenantId
+      const tenant = await this.projectsRepository.manager.findOne(Tenant, { where: { id: tenantId } });
+      if (!tenant) {
+        throw new BadRequestException('Tenant not found');
+      }
       const project = this.projectsRepository.create({
         ...projectData,
+        tenant,
         dueDate: new Date(projectData.dueDate),
         totalHours: 0 // Изначально 0, будет обновлено при добавлении задач
       });

@@ -15,6 +15,7 @@ import Login from '../pages/Login';
 import Register from '../pages/Register';
 import { TenantRegistration } from '../pages/TenantRegistration';
 import NotFound from '../pages/NotFound';
+import NotInTenant from '../pages/NotInTenant';
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -46,6 +47,15 @@ const AppRoutes = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="text-gray-500">Loading...</div>
       </div>
+    );
+  }
+
+  // Если пользователь залогинен, но не привязан к тенанту — показываем отдельную страницу
+  if (user && !user.tenantId) {
+    return (
+      <Routes>
+        <Route path="/*" element={<NotInTenant />} />
+      </Routes>
     );
   }
 

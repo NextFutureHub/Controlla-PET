@@ -64,7 +64,7 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto & { tenant: any }> {
-    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    const existingUser = await this.usersService.findByEmailOrNull(registerDto.email);
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }

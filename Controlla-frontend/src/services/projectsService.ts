@@ -61,6 +61,7 @@ export interface CreateProjectDto {
   totalHours?: number;
   budget: number;
   assignedContractors?: string[];
+  tenantId: string;
 }
 
 export interface CreateTaskDto {

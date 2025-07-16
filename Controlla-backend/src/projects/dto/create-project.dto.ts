@@ -84,6 +84,14 @@ export class CreateProjectDto {
   spent?: number;
 
   @ApiProperty({
+    description: 'ID тенанта',
+    example: 'b1a2c3d4-e5f6-7890-1234-56789abcdef0'
+  })
+  @IsString()
+  @IsNotEmpty()
+  tenantId: string;
+
+  @ApiProperty({
     description: 'ID назначенных подрядчиков',
     example: ['1', '2', '3']
   })
