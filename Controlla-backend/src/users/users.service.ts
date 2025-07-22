@@ -86,4 +86,9 @@ export class UsersService {
       lastLoginAt: new Date(),
     });
   }
+
+  async findByTenantId(tenantId: string): Promise<UserResponseDto[]> {
+    const users = await this.usersRepository.find({ where: { tenant: { id: tenantId } }, relations: ['tenant'] });
+    return users.map(({ password, ...user }) => user);
+  }
 } 

@@ -16,6 +16,7 @@ import Register from '../pages/Register';
 import { TenantRegistration } from '../pages/TenantRegistration';
 import NotFound from '../pages/NotFound';
 import NotInTenant from '../pages/NotInTenant';
+import CompanyMembers from '../pages/CompanyMembers';
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -84,6 +85,7 @@ const AppRoutes = () => {
         <Route path="reports" element={<Reports />} />
         <Route path="messages" element={<Messages />} />
         <Route path="tenant-settings" element={<TenantSettings />} />
+        <Route path="company-members" element={<CompanyMembers />} />
       </Route>
       
       <Route path="*" element={<NotFound />} />

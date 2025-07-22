@@ -54,6 +54,7 @@ const Sidebar = () => {
     { to: "/finance", icon: <DollarSign size={20} />, label: "Finance" },
     { to: "/reports", icon: <BarChart size={20} />, label: "Reports" },
     { to: "/messages", icon: <MessageSquare size={20} />, label: "Messages" },
+    { to: "/company-members", icon: <Users size={20} />, label: "Company Members" },
   ];
 
   return (

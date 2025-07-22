@@ -32,6 +32,17 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('by-tenant')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all users by current tenant' })
+  @ApiResponse({ status: 200, description: 'Return all users by tenant', type: [UserResponseDto] })
+  async findByTenant(@Request() req): Promise<UserResponseDto[]> {
+    const tenantId = req.user.tenantId;
+    if (!tenantId) throw new Error('No tenantId in user payload');
+    return this.usersService.findByTenantId(tenantId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'Return user by ID', type: UserResponseDto })

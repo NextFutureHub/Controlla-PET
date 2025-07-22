@@ -3,16 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
-import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
-import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Plus, Clock, Users, Calendar, AlertCircle, MoreHorizontal, Trash2, X } from 'lucide-react';
 import { projectsService, Project, UpdateProjectDto } from '../services/projectsService';
 import { tasksService, Task } from '../services/tasksService';
 import { getProjectStatusInfo } from '../utils/projectStatus';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
-import { contractorsService, Contractor } from '../services/contractorsService';
+import { contractorsService } from '../services/contractorsService';
 import { toast } from 'react-hot-toast';
 import EditProjectModal from '../components/projects/EditProjectModal';
 
@@ -34,9 +32,9 @@ const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [taskFormData, setTaskFormData] = useState<CreateTaskFormData>({
+  const [_showCreateModal, setShowCreateModal] = useState(false);
+  const [_activeDropdown, _setActiveDropdown] = useState<string | null>(null);
+  const [_taskFormData, _setTaskFormData] = useState<CreateTaskFormData>({
     name: '',
     description: '',
     estimatedHours: 0,
