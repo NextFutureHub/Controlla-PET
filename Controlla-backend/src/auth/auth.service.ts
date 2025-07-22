@@ -45,6 +45,7 @@ export class AuthService {
     if (!userEntity || !(await bcrypt.compare(loginDto.password, userEntity.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    await this.usersService.updateLastLogin(userEntity.id);
     const user = this.toUserResponseDto(userEntity);
     let tenant = userEntity.tenant ? await this.tenantsService.findOne(userEntity.tenant.id) : null;
 
