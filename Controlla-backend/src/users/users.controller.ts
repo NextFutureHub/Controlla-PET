@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request }
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUserGuard } from '../auth/guards/current-user.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from './enums/user-role.enum';
@@ -33,13 +34,14 @@ export class UsersController {
   }
 
   @Get('by-tenant')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CurrentUserGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users by current tenant' })
   @ApiResponse({ status: 200, description: 'Return all users by tenant', type: [UserResponseDto] })
   async findByTenant(@Request() req): Promise<UserResponseDto[]> {
-    const tenantId = req.user.tenantId;
-    if (!tenantId) throw new Error('No tenantId in user payload');
+    const tenantId = req.user.tenant?.id;
+    
+    if (!tenantId) throw new Error('No tenant in user data');
     return this.usersService.findByTenantId(tenantId);
   }
 
